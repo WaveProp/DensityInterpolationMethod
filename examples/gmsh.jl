@@ -1,6 +1,10 @@
 using GmshSDK
 
+const GEOMET = 2
+
 gmsh.initialize()
+
+
 gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
 gmsh.model.add("model_name")
 
