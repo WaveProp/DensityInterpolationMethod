@@ -13,16 +13,15 @@ using OrderedCollections
 using StaticPolynomials       
 import DynamicPolynomials: @polyvar  
                             
-using GmshSDK
 using DensityInterpolationMethod.Utils
 
 export vertices, center, number_of_nodes, getnodes
-export jacobian, domain, measure, normal, elementdata, order
-export read_gmsh_geo
+export jacobian, domain, measure, normal, elementdata, order,
+       AbstractElement, FlatTriangleElement, QuadraticTriangleElement
+export GenericMesh
 
 include("lagrangepoly.jl")
 include("referenceshapes.jl")
 include("element.jl")
 include("meshes.jl")
-include("gmshIO.jl")
 end 

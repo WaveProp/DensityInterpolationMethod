@@ -43,16 +43,6 @@ domain(::Type{<:AbstractElement{D}}) where {D<:AbstractReferenceShape} = D()
 domain(el::AbstractElement) = domain(typeof(el))
 
 """
-    center(el::AbstractElement)
-
-Returns the center of the element, in parametric coordinates.
-"""
-function center(el::AbstractElement)
-    dom = domain(el)
-    return center(dom)
-end
-
-"""
     measure(τ::AbstractElement, u::AbstractVector)
     measure(jacobian::AbstractMatrix)
 
@@ -147,6 +137,26 @@ struct LagrangeElement{D} <: AbstractElement{D}
         nodes = [[x, y, z] for (x, y, z) in nodes]
         return LagrangeElement{D}(nodes)
     end
+end
+
+"""
+    center(el::LagrangeElement)
+
+Returns the center of the element, in parametric coordinates.
+"""
+function center(el::LagrangeElement)
+    dom = domain(el)
+    return center(dom)
+end
+
+"""
+    nodes(el::LagrangeElement)
+
+Returns the nodes of the element, in parametric coordinates.
+"""
+function nodes(el::LagrangeElement)
+    dom = domain(el)
+    return nodes(dom)
 end
 
 # Some aliases
