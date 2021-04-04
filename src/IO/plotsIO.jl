@@ -8,7 +8,8 @@
     surfacemeshplot!(mesh:GenericMesh; npoints=5)
 
 Function that plots the surface of each element of a mesh.
-It is possible that some elements may not be displayed properly.
+It is possible that some elements may not be displayed properly, 
+refer to https://github.com/plotly/plotly.py/issues/2194.
 """
 @userplot SurfaceMeshPlot
 @recipe function f(h::SurfaceMeshPlot; npoints=5)
