@@ -1,5 +1,6 @@
 module IO
 
+using StaticArrays
 using RecipesBase
 using GmshSDK
 
@@ -8,4 +9,5 @@ using DensityInterpolationMethod.Mesh
 
 export read_gmsh_geo
 include("gmshIO.jl")
+include("plotsIO.jl")
 end

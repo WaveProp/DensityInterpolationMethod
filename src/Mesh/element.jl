@@ -7,7 +7,7 @@ Abstract shape ⊂ ℜ³ given by the image of a parametrization with domain
 Instances `el` of `AbstractElement` are expected to implement:
 - `el(x̂)`: evaluate the parametrization defining the element at the parametric
     coordinates `x̂ ∈ D`.
-- `jacobian(el,x̂)` : evaluate the jacobian matrix of the parametrization at the
+- `getjacobian(el,x̂)` : evaluate the jacobian matrix of the parametrization at the
     parametric coordinate `x ∈ D`. For performance reasons, it is important to
     use an `SMatrix` of size `M × N`, where `M` is the [`ambient_dimension`](@ref)
     of `el` and `N` is the [`geometric_dimension`](@ref) of `el`, respectively.
@@ -25,22 +25,22 @@ function (el::AbstractElement)(x)
 end
 
 """
-    jacobian(el::AbstractElement,x)
+    getjacobian(el::AbstractElement,x)
 
 Evaluate the jacobian of the underlying parametrization of the element `el` at
 point `x`. 
 """
-function jacobian(el::AbstractElement, x) 
+function getjacobian(el::AbstractElement, x) 
     abstractmethod(typeof(el))
 end
 
 """
-    domain(el::AbstractElement)
+    getdomain(el::AbstractElement)
 
 Returns an instance of the singleton type `D` ⊂ ℜ²; i.e. the reference element.
 """
-domain(::Type{<:AbstractElement{D}}) where {D<:AbstractReferenceShape} = D()
-domain(el::AbstractElement) = domain(typeof(el))
+getdomain(::Type{<:AbstractElement{D}}) where {D<:AbstractReferenceShape} = D()
+getdomain(el::AbstractElement) = getdomain(typeof(el))
 
 """
     measure(τ::AbstractElement, u::AbstractVector)
@@ -57,46 +57,46 @@ In general, this is given by `√det(g)`, where `g = JᵗJ` is the metric tensor
 `J` the jacobian of the element. 
 If the jacobian evaluated at u ∈ `` \\hat{\\tau} `` is not provided, it is computed.
 """
-function measure(jacobian::AbstractMatrix)
+function getmeasure(jacobian::AbstractMatrix)
     g = det(transpose(jacobian)*jacobian)   # general case of a surface measure
     μ = sqrt(g)
     return μ
 end
-function measure(el::AbstractElement, u::AbstractVector)
-    jac = jacobian(el, u)
-    return measure(jac)
+function getmeasure(el::AbstractElement, u::AbstractVector)
+    jac = getjacobian(el, u)
+    return getmeasure(jac)
 end
 
 """
-    normal(el::AbstractElement,x̂)
+    getnormal(el::AbstractElement,x̂)
 
 The outer normal vector for the `el` ⊂ ℜ³ at the parametric coordinate `x̂ ∈
 domain(el)` ⊂ ℜ². It is computed with the jacobian evaluated at `x̂`. If the
 jacobian is not provided, it is computed.
 """
-function normal(jacobian::AbstractMatrix)
+function getnormal(jacobian::AbstractMatrix)
     t₁ = jacobian[:, 1]
     t₂ = jacobian[:, 2]
     n = cross(t₁, t₂)
     return n / norm(n)   
 end    
-function normal(el::AbstractElement, u::AbstractVector)
-    jac = jacobian(el, u)    
-    return normal(jacobian::AbstractMatrix)  
+function getnormal(el::AbstractElement, u::AbstractVector)
+    jac = getjacobian(el, u)    
+    return getnormal(jac)  
 end    
 
 """
-    elementdata(el::AbstractElement, u::AbstractVector)
+    getelementdata(el::AbstractElement, u::AbstractVector)
 
 Returns a tuple '(el_eval, jac, mu, n)', where 'el_eval' is the element parametrization, 
 'jac' is the jacobian, 'mu' is the measure and 'n' is the normal, all evaluated at 
 parametric coordinates 'u'.
 """
-function elementdata(el::AbstractElement, u::AbstractVector)
+function getelementdata(el::AbstractElement, u::AbstractVector)
     el_eval = el(u)
-    jac = jacobian(el, u)
-    μ = measure(jac)
-    n = normal(jac)
+    jac = getjacobian(el, u)
+    μ = getmeasure(jac)
+    n = getnormal(jac)
     return el_eval, jac, μ, n
 end
 
@@ -118,7 +118,7 @@ struct LagrangeElement{D} <: AbstractElement{D}
     # Constructors
     function LagrangeElement{D}(nodes) where D<:AbstractReferenceShape
         domain = D()
-        n_nodes = number_of_nodes(domain)
+        n_nodes = get_number_of_nodes(domain)
         @assert n_nodes == length(nodes)
         basis = lagrange_basis(domain)
 
@@ -140,23 +140,23 @@ struct LagrangeElement{D} <: AbstractElement{D}
 end
 
 """
-    center(el::LagrangeElement)
+    getcenter(el::LagrangeElement)
 
 Returns the center of the element, in parametric coordinates.
 """
-function center(el::LagrangeElement)
-    dom = domain(el)
-    return center(dom)
+function getcenter(el::LagrangeElement)
+    dom = getdomain(el)
+    return getcenter(dom)
 end
 
 """
-    nodes(el::LagrangeElement)
+    getnodes(el::LagrangeElement)
 
 Returns the nodes of the element, in parametric coordinates.
 """
-function nodes(el::LagrangeElement)
-    dom = domain(el)
-    return nodes(dom)
+function getnodes(el::LagrangeElement)
+    dom = getdomain(el)
+    return getnodes(dom)
 end
 
 # Some aliases
@@ -171,14 +171,14 @@ const FlatTriangleElement = LagrangeElement{ReferenceTriangle3}
 const QuadraticTriangleElement = LagrangeElement{ReferenceTriangle6}
 
 """
-    order(el::LagrangeElement)
+    getorder(el::LagrangeElement)
 
 The order of the underlying polynomial used to represent this type of element.
 """
-order(::LagrangeElement) = abstractmethod(typeof(el))
-function order(el::LagrangeElement{<:ReferenceTriangle})
-    dom = domain(el)
-    Np = number_of_nodes(dom)
+getorder(::LagrangeElement) = abstractmethod(typeof(el))
+function getorder(el::LagrangeElement{<:ReferenceTriangle})
+    dom = getdomain(el)
+    Np = get_number_of_nodes(dom)
     p = (-3 + sqrt(1+8*Np))/2
     msg = "unable to determine order for LagrangeTriangle containing Np=$(Np) interpolation points.
            Need `Np = (p+1)*(p+2)/2` for some integer `p`."
@@ -188,12 +188,12 @@ function order(el::LagrangeElement{<:ReferenceTriangle})
 
 function (el::LagrangeElement)(u)
     @assert length(u) == DIMENSION2
-    @assert u ∈ domain(el) 
+    @assert u ∈ getdomain(el) 
     return StaticPolynomials.evaluate(el.forwardmap, u)
 end
 
-function jacobian(el::LagrangeElement, u) 
+function getjacobian(el::LagrangeElement, u) 
     @assert length(u) == DIMENSION2    
-    @assert u ∈ domain(el)
+    @assert u ∈ getdomain(el)
     return StaticPolynomials.jacobian(el.forwardmap, u)
 end 

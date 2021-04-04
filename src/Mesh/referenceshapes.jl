@@ -11,10 +11,10 @@ A reference domain/shape in `ℜ²`.
 """
 abstract type AbstractReferenceShape end
 Base.in(x,::AbstractReferenceShape) = abstractmethod(typeof(el))
-vertices(::AbstractReferenceShape) = abstractmethod(typeof(el))
-center(::AbstractReferenceShape) = abstractmethod(typeof(el))
-number_of_nodes(::AbstractReferenceShape) = abstractmethod(typeof(el))  # lagrangian nodes
-getnodes(::AbstractReferenceShape) = abstractmethod(typeof(el))            # lagrangian nodes
+getvertices(::AbstractReferenceShape) = abstractmethod(typeof(el))
+getcenter(::AbstractReferenceShape) = abstractmethod(typeof(el))
+get_number_of_nodes(::AbstractReferenceShape) = abstractmethod(typeof(el))  # lagrangian nodes
+getgetnodes(::AbstractReferenceShape) = abstractmethod(typeof(el))            # lagrangian nodes
 
 """
     lagrange_basis(el::AbstractReferenceShape)
@@ -34,8 +34,8 @@ An abstract 2D reference triangle with vertices `(0,0),(0,1),(1,0)`.
 """
 abstract type ReferenceTriangle <: AbstractReferenceShape end
 Base.in(x,::ReferenceTriangle) = 0 ≤ x[1] ≤ 1 && 0 ≤ x[2] ≤ 1 - x[1]
-vertices(::ReferenceTriangle) = Point2D(0,0), Point2D(1,0), Point2D(0,1)
-center(::ReferenceTriangle) = Point2D(1/3, 1/3)
+getvertices(::ReferenceTriangle) = Point2D(0,0), Point2D(1,0), Point2D(0,1)
+getcenter(::ReferenceTriangle) = Point2D(1/3, 1/3)
 
 """
     struct ReferenceTriangle3 <: ReferenceTriangle
@@ -45,7 +45,7 @@ It is used to map the ReferenceTriangle into flat triangles in 3D.
 """
 struct ReferenceTriangle3 <: ReferenceTriangle
 end
-number_of_nodes(::ReferenceTriangle3) = 3
+get_number_of_nodes(::ReferenceTriangle3) = 3
 getnodes(::ReferenceTriangle3) = Point2D(0,0), Point2D(1,0), Point2D(0,1)
 
 function lagrange_basis(el::ReferenceTriangle3)
@@ -60,7 +60,7 @@ It is used to map the ReferenceTriangle into quadratic triangles in 3D.
 """
 struct ReferenceTriangle6 <: ReferenceTriangle
 end
-number_of_nodes(::ReferenceTriangle6) = 6
+get_number_of_nodes(::ReferenceTriangle6) = 6
 getnodes(::ReferenceTriangle6) = Point2D(0,0), Point2D(1,0), Point2D(0,1),
                               Point2D(1/2,0), Point2D(1/2,1/2), Point2D(0,1/2)
 
