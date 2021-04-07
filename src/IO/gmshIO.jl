@@ -48,11 +48,12 @@ function _initialize_mesh()
     # Get element data (surface elements only)
     elementTypes, _, elNodeTagsList = gmsh.model.mesh.getElements(DIMENSION2)
 
-    # Generate element list
-    elements = AbstractElement[]
+    # Generate mesh
+    mesh = GenericMesh()
     for (etype, elNodeTags) in zip(elementTypes, elNodeTagsList)
         # Map gmsh type tags to actual internal types
         etype, nodes_per_element = _get_gmsh_element_data(etype)
+        elements = etype[]
 
         # Process element node tags
         elNodeTags = reshape(elNodeTags, nodes_per_element, :)
@@ -62,8 +63,8 @@ function _initialize_mesh()
             el = _generate_element(etype, tag2node, tags) 
             push!(elements, el)     # Push into list
         end
+        mesh.etype2elements[etype] = elements   # Push into mesh dict
     end
-    mesh = GenericMesh(elements)
     return mesh
 end
 

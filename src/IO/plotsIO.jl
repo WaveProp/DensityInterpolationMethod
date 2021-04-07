@@ -23,7 +23,7 @@ refer to https://github.com/plotly/plotly.py/issues/2194.
     coords_dict[QuadraticTriangleElement] = 
         coords_dict[FlatTriangleElement]
 
-    for el in mesh.elements
+    for el in getelements(mesh)
         coords = coords_dict[typeof(el)]
         @series begin
             PlotElement(), el, coords
@@ -57,7 +57,7 @@ the center, the normal vector and the tangent vectors of each element.
     markersize := 1
     markershape := :circle
     if nodes
-        for el in mesh.elements
+        for el in getelements(mesh)
             @series begin
                 el
             end
@@ -71,7 +71,7 @@ the center, the normal vector and the tangent vectors of each element.
         jac_list = []
 
         # Get data
-        for el in mesh.elements
+        for el in getelements(mesh)
             el_center, jac, _, n = getelementdata(el, getcenter(el))
             push!(c_list, el_center)
             push!(n_list, n .* normals)

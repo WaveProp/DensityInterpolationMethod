@@ -7,7 +7,7 @@ module Mesh
 
 using LinearAlgebra
 using StaticArrays
-using OrderedCollections
+import OrderedCollections: OrderedDict
 
 # for evaluating and differentiating Lagrange polynomials
 using StaticPolynomials       
@@ -35,7 +35,9 @@ export
     getmeasure,
     getnormal,
     getelementdata,
-    getorder
+    getorder,
+    getelements,
+    get_number_of_elements
 
 include("lagrangepoly.jl")
 include("referenceshapes.jl")
