@@ -5,7 +5,7 @@
 """
 
 """
-    abstract type AbstractReferenceShape{N}
+    abstract type AbstractReferenceShape
     
 A reference domain/shape in `ℜ²`.
 """

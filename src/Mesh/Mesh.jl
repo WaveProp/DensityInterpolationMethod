@@ -15,10 +15,27 @@ import DynamicPolynomials: @polyvar
                             
 using DensityInterpolationMethod.Utils
 
-export getvertices, getcenter, get_number_of_nodes, getnodes
-export getjacobian, getdomain, getmeasure, getnormal, getelementdata, getorder,
-       AbstractElement, LagrangeElement, FlatTriangleElement, QuadraticTriangleElement
-export GenericMesh
+export 
+    # Abstract types
+    AbstractReferenceShape,
+    AbstractElement,
+    # Types
+    LagrangeElement,
+    ReferenceTriangle,
+    FlatTriangleElement,
+    QuadraticTriangleElement,
+    GenericMesh,
+    # Functions
+    getvertices,
+    getcenter,
+    get_number_of_nodes,
+    getnodes,
+    getjacobian,
+    getdomain,
+    getmeasure,
+    getnormal,
+    getelementdata,
+    getorder
 
 include("lagrangepoly.jl")
 include("referenceshapes.jl")
