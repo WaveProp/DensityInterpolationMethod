@@ -17,6 +17,18 @@ Base.@kwdef struct GenericMesh
 end
 
 """
+    get_etypes_and_elements(mesh::GenericMesh)
+
+Returns an iterator that contains the element types and the elements 
+of the `mesh`. Each entry is a tuple `(etype, elist)`, where `etype`
+is an element type and `elist` is the list of elements associated
+with that type.
+"""
+function get_etypes_and_elements(mesh::GenericMesh)
+    return pairs(mesh.etype2elements)
+end
+
+"""
     getelements(mesh::GenericMesh)
 
 Utility function for getting an iterator with all mesh elements.
@@ -32,6 +44,5 @@ Returns the total number of elements in the mesh.
 """
 function get_number_of_elements(mesh::GenericMesh)
     return sum(length(v) for v in values(mesh.etype2elements))
-    
 end
 

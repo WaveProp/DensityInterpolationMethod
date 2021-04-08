@@ -37,7 +37,8 @@ export
     getelementdata,
     getorder,
     getelements,
-    get_number_of_elements
+    get_number_of_elements,
+    get_etypes_and_elements
 
 include("lagrangepoly.jl")
 include("referenceshapes.jl")

@@ -71,7 +71,7 @@ end
 """
     _get_gmsh_element_data(etag)
 
-Function that given a gmsh element type 'etag' (encoded as an integer), 
+Function that given a gmsh element type `etag` (encoded as an integer), 
 returns the internal element type (encoded as a Type{<:AbstractElement}) and 
 the number of nodes of the element. This function assumes `gmsh` has been 
 initialized.
@@ -92,9 +92,9 @@ end
 """
     _generate_element(etype, nodes, tag2index, tags)
 
-Returns an element of type 'etype', given the list of nodes 'nodes',
-the dictionary 'tag2index', that maps node tags into node indices,
-and the element node tags 'tags'.
+Returns an element of type `etype`, given the list of nodes `nodes`,
+the dictionary `tag2index`, that maps node tags into node indices,
+and the element node tags `tags`.
 """
 function _generate_element(etype, tag2node, tags)
     element_nodes = [tag2node[t] for t in tags]

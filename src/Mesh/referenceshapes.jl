@@ -20,8 +20,8 @@ getgetnodes(::AbstractReferenceShape) = abstractmethod(typeof(el))            # 
     lagrange_basis(el::AbstractReferenceShape)
 
 Function that returns the Lagrange Polynomial basis associated with 
-the reference shape 'el'. Returns a tuple (b_1, ..., b_n), where b_i
-is the Lagrange polynomial associated with node n_i of 'el'.
+the reference shape `el`. Returns a tuple (b_1, ..., b_n), where b_i
+is the Lagrange polynomial associated with node n_i of `el`.
 """
 function lagrange_basis(el::AbstractReferenceShape)
     abstractmethod(typeof(el))

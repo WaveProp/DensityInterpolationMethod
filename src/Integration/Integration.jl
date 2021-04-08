@@ -5,12 +5,19 @@ Methods for integrating over instances of [`AbstractReferenceShape`](@ref).
 """
 module Integration
 
+using StaticArrays
+
 using DensityInterpolationMethod.Utils
 using DensityInterpolationMethod.Mesh
+import DensityInterpolationMethod.Mesh: getdomain
 
 export 
     # Abstract types
-    AbstractQuadratureRule
+    AbstractQuadratureRule,
+    # Types
+    # Functions
+    integrate
 
 include("quadrature.jl")
+include("meshintegration.jl")
 end

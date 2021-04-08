@@ -43,8 +43,8 @@ getdomain(::Type{<:AbstractElement{D}}) where {D<:AbstractReferenceShape} = D()
 getdomain(el::AbstractElement) = getdomain(typeof(el))
 
 """
-    measure(τ::AbstractElement, u::AbstractVector)
-    measure(jacobian::AbstractMatrix)
+    getmeasure(τ::AbstractElement, u::AbstractVector)
+    getmeasure(jacobian::AbstractMatrix)
 
 The integration measure `μ` of the transformation `τ` so that 
 ```math
@@ -88,9 +88,9 @@ end
 """
     getelementdata(el::AbstractElement, u::AbstractVector)
 
-Returns a tuple '(el_eval, jac, mu, n)', where 'el_eval' is the element parametrization, 
-'jac' is the jacobian, 'mu' is the measure and 'n' is the normal, all evaluated at 
-parametric coordinates 'u'.
+Returns a tuple `(el_eval, jac, mu, n)`, where `el_eval` is the element parametrization, 
+`jac` is the jacobian, `mu` is the measure and `n` is the normal, all evaluated at 
+parametric coordinates `u`.
 """
 function getelementdata(el::AbstractElement, u::AbstractVector)
     el_eval = el(u)

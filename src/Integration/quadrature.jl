@@ -22,48 +22,28 @@ abstract type AbstractQuadratureRule{D<:AbstractReferenceShape} end
 getdomain(q::AbstractQuadratureRule{D}) where {D} = D()
 
 """
-    (q::AbstractQuadratureRule)()
+    get_qnodes_and_qweights(q::AbstractQuadratureRule)
 
 Return the quadrature nodes `x` and weights `w` on the `domain(q)`.
 """
-function (q::AbstractQuadratureRule)() 
+function get_qnodes_and_qweights(q::AbstractQuadratureRule)
     abstractmethod(typeof(q))
 end
 
 """
-    qnodes(Y)
+    getqnodes(Y)
 
 Return the quadrature nodes associated with `Y`.
 """
-getqnodes(q::AbstractQuadratureRule) = q()[1]
+getqnodes(q::AbstractQuadratureRule) = get_qnodes_and_qweights(q)[1]
 
 """
-    qweights(Y)
+    getqweights(Y)
 
 Return the quadrature weights associated with `Y`.
 """
-getqweights(q::AbstractQuadratureRule) = q()[2]
+getqweights(q::AbstractQuadratureRule) = get_qnodes_and_qweights(q)[2]
 
-"""
-    qnormals(Y)
-
-Return the normal vector at the quadrature nodes of `Y.
-"""
-getqnormals(q::AbstractQuadratureRule) = abstractmethod(typeof(q))
-
-"""
-    integrate(f, q::AbstractQuadrature)
-
-Integrate the function `f` using the quadrature rule `q`. This is simply
-`sum(f.(x) .* w)`, where `x` and `w` are the quadrature nodes and weights, respectively.
-"""
-function integrate(f, q::AbstractQuadratureRule)
-    x,w = q()
-    result = sum(zip(x,w)) do (x,w)
-                f(x)*prod(w)
-             end
-    return result
-end
 
 """
     struct GaussQuadrature{D, N} <: AbstractQuadratureRule{D}
@@ -76,7 +56,8 @@ end
 GaussQuadrature(ref,n) = GaussQuadrature{typeof(ref),n}()
 GaussQuadrature(ref;n) = GaussQuadrature{typeof(ref),n}()
 
-@generated function (q::GaussQuadrature{<:ReferenceTriangle, N})() where {N}
+@generated function 
+    get_qnodes_and_qweights(q::GaussQuadrature{<:ReferenceTriangle, N}) where {N}
     if N == 1
         x = SVector((Point2D(1/3, 1/3),))
         w = SVector(1/2)
@@ -91,6 +72,15 @@ GaussQuadrature(ref;n) = GaussQuadrature{typeof(ref),n}()
                     Point2D(1/5,3/5),
                     Point2D(3/5,1/5))
         w = SVector(-9/32, 25/96, 25/96, 25/96)
+    elseif N == 6
+        x = SVector(Point2D(0.445948490915965, 0.445948490915965),
+                    Point2D(0.445948490915965, 0.10810301816807),
+                    Point2D(0.10810301816807, 0.445948490915965),
+                    Point2D(0.091576213509771, 0.091576213509771),
+                    Point2D(0.091576213509771, 0.816847572980459),
+                    Point2D(0.816847572980459, 0.091576213509771))
+        w = SVector(0.111690794839005, 0.111690794839005, 0.111690794839005, 
+                    0.054975871827661, 0.054975871827661, 0.054975871827661)
     else
         notimplemented()
     end
@@ -111,6 +101,8 @@ function get_qrule_for_reference_shape(ref, order)
             return GaussQuadrature(ref, n=3)
         elseif order <= 3
             return GaussQuadrature(ref, n=4)
+        elseif order <= 4
+            return GaussQuadrature(ref, n=6)
         end
     end
     error("no appropriate quadrature rule found.")
@@ -122,5 +114,5 @@ end
 Given an element type `E`, return an appropriate quadrature of order `order`.
 """
 function get_qrule_for_element(E, order)
-    get_qrule_for_reference_shape(getdomain(E), order)
+    return get_qrule_for_reference_shape(getdomain(E), order)
 end
