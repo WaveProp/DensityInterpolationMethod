@@ -8,12 +8,15 @@ GMSH IO methods.
 Read a `.geo` file and generate a [`GenericMesh`](@ref).
 Assumes that the mesh correspond to a surface in 3D.
 """
-function read_gmsh_geo(fname; h=nothing, order=nothing)
+function read_gmsh_geo(fname; h=nothing, order=nothing, verbosity=true)
     assert_extension(fname, ".geo")    
     gmsh.initialize()
+    if !verbosity _gmsh_set_verbosity(verbosity) end
     gmsh.open(fname)    
+
     if !(h === nothing) _gmsh_set_meshsize(h) end
     if !(order === nothing) _gmsh_set_meshorder(order) end
+
     gmsh.model.mesh.generate(DIMENSION2)  # mesh surfaces
     mesh = _initialize_mesh()
     gmsh.finalize()
@@ -27,6 +30,10 @@ end
 
 function _gmsh_set_meshorder(order)
     gmsh.option.setNumber("Mesh.ElementOrder", order)
+end
+
+function _gmsh_set_verbosity(i) 
+    gmsh.option.setNumber("General.Verbosity",i)
 end
 
 """
