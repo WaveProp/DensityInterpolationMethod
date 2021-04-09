@@ -5,6 +5,7 @@ Methods for integrating over instances of [`AbstractReferenceShape`](@ref).
 """
 module Integration
 
+using LinearAlgebra
 using StaticArrays
 
 using DensityInterpolationMethod.Utils
@@ -16,7 +17,8 @@ export
     AbstractQuadratureRule,
     # Types
     # Functions
-    integrate
+    integrate,
+    integrateflux
 
 include("quadrature.jl")
 include("meshintegration.jl")
