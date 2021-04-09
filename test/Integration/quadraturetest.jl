@@ -32,17 +32,10 @@ const TOL1 = 1e-14
     end
 
     refshape = ReferenceTriangle3()
-    @testset "Qrule order 1" begin
-        test_qrule(1, refshape, TOL1)
-    end
-    @testset "Qrule order 2" begin
-        test_qrule(2, refshape, TOL1)
-    end
-    @testset "Qrule order 3" begin
-        test_qrule(3, refshape, TOL1)
-    end
-    @testset "Qrule order 4" begin
-        test_qrule(4, refshape, TOL1)
+    for i in 1:QRULE_MAX_ORDER
+        @testset "Qrule order $i" begin
+            test_qrule(i, refshape, TOL1)
+        end
     end
 end
 
