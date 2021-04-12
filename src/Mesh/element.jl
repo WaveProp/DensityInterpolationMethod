@@ -109,11 +109,11 @@ lagrangian nodes of the reference element `D` into `nodes`.
 The element's parametrization is fully determined by the image of the `Np`
 reference points through polynomial interpolation.
 """
-struct LagrangeElement{D} <: AbstractElement{D}
-    # Polynomial that represents the mapping from the reference element `D`
+struct LagrangeElement{D, T<:ForwardMap} <: AbstractElement{D}
+    # Polynomial that represents the mapping from the reference element `D` ⊂ ℜ²
     # to the element ⊂ ℜ³.
     # StaticPolynomials.PolynomialSystem is used for fast evaluations.
-    forwardmap::PolynomialSystem
+    forwardmap::T
 
     # Constructors
     function LagrangeElement{D}(nodes) where D<:AbstractReferenceShape
@@ -126,7 +126,7 @@ struct LagrangeElement{D} <: AbstractElement{D}
         forwardmap = sum(nodes[i] * basis[i] for i in 1:n_nodes)
         # Convert to StaticPolynomials.PolynomialSystem
         forwardmap = PolynomialSystem(forwardmap)   
-        return new{D}(forwardmap)
+        return new{D, typeof(forwardmap)}(forwardmap)
     end
     function LagrangeElement{D}(nodes::AbstractVector{Point3D}) where D<:AbstractReferenceShape
         # Convert static arrays to regular arrays.

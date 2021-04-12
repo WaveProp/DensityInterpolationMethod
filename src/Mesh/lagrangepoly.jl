@@ -7,6 +7,14 @@
     Polynomials are later converted to StaticPolynomials for fast evaluation.
 """
 
+"""
+    const LagrangePoly = PolynomialSystem{DIMENSION3,DIMENSION2,0}
+
+Abstract type that describes the mapping between a 2D reference element and a 
+3D Lagrange element using StaticPolynomials.
+"""
+const ForwardMap = PolynomialSystem{DIMENSION3,DIMENSION2,0}
+
 # Definition of symbolic variable u = (u1, u2) ∈ `ℜ²`
 let (u,) = @polyvar(u[1:2])
     const global _u_symbolic_variable = u

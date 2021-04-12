@@ -12,7 +12,7 @@ Base.@kwdef struct GenericMesh
     # Dictionary of mesh elements. Keys correspond to Element 
     # types (e.g. FlatTriangleElement) and values are vectors
     # of elements.
-    etype2elements :: OrderedDict{DataType, Vector{<:AbstractElement}} = 
+    etype2elements :: OrderedDict{Any, Vector{<:AbstractElement}} = 
                           OrderedDict{DataType, Vector{<:AbstractElement}}()    
 end
 

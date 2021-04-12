@@ -51,7 +51,6 @@ function _initialize_mesh()
     nodes = reinterpret(Point3D, nodes) |> collect
     tag2node = Dict(nodeTags[i] => nodes[i] for i = 1:n_nodes)  # (NodeTag => node)
     
-
     # Get element data (surface elements only)
     elementTypes, _, elNodeTagsList = gmsh.model.mesh.getElements(DIMENSION2)
 
