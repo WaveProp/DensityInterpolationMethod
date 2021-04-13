@@ -88,8 +88,8 @@ end
 """
     getelementdata(el::AbstractElement, u::AbstractVector)
 
-Returns a tuple `(el_eval, jac, mu, n)`, where `el_eval` is the element parametrization, 
-`jac` is the jacobian, `mu` is the measure and `n` is the normal, all evaluated at 
+Returns a tuple `(el_eval, jac, μ, n)`, where `el_eval` is the element parametrization, 
+`jac` is the jacobian, `μ` is the measure and `n` is the normal, all evaluated at 
 parametric coordinates `u`.
 """
 function getelementdata(el::AbstractElement, u::AbstractVector)
@@ -157,6 +157,16 @@ Returns the nodes of the element, in parametric coordinates.
 function getnodes(el::LagrangeElement)
     dom = getdomain(el)
     return getnodes(dom)
+end
+
+"""
+    get_number_of_nodes(el::LagrangeElement)
+
+Returns the number of nodes of the element.
+"""
+function get_number_of_nodes(el::LagrangeElement)
+    dom = getdomain(el)
+    return get_number_of_nodes(dom)
 end
 
 # Some aliases

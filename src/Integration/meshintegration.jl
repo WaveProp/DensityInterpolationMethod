@@ -3,39 +3,48 @@
 """
 
 """
-    get_qnodes_and_qweights(q::AbstractQuadratureRule, el)
+    get_quadrature_data(q::AbstractQuadratureRule, el)
 
-Returns the quadrature nodes `x` and weights `w` for integrating over `el`. 
-The *lifted* quadrature is computed by mapping the reference quadrature through
-`el`. This requires `el` to support the methods `el(x̂)` and `getjacobian(el,x̂)`.
+Returns the n-point quadrature data `(d₁, d₂, ..., dₙ)` where `dᵢ = (xᵢ, wᵢ, jacᵢ, nᵢ)`, 
+`xᵢ` are the *lifted* quadrature nodes, `wᵢ` are the *lifted* quadrature weights, `jacᵢ`
+is the jacobian at `xᵢ` and `nᵢ` is the normal at xi, for `i=1:N`. This requires `el` 
+to support the method `getelementdata(el, x̂)`.
 """
-function get_qnodes_and_qweights(q::AbstractQuadratureRule, el)
+function get_quadrature_data(q::AbstractQuadratureRule, el)
     @assert getdomain(el) === getdomain(q) 
     x̂, ŵ = get_qnodes_and_qweights(q)
-    return _push_forward_quadrature(el, x̂, ŵ)
+    qdata = _push_forward_quadrature(el, x̂, ŵ)
+    return qdata
 end
 function _push_forward_quadrature(el, x̂, ŵ)
-    x = map(x̂ᵢ->el(x̂ᵢ),x̂)
-    w = map(x̂,ŵ) do x̂ᵢ,ŵᵢ
-        μ = getmeasure(el, x̂ᵢ)
-        μ * ŵᵢ
-    end 
-    return x, w
+    qdata = map(x̂, ŵ) do x̂ᵢ,ŵᵢ
+        x, jac, μ, n = getelementdata(el, x̂ᵢ)
+        w = μ * ŵᵢ
+        x, w, jac, n
+    end
+    return qdata
 end    
 
 """
-    get_qnodes_qweights_and_qnormals(q::AbstractQuadratureRule, el)
+    get_qnodes_and_qweights(q::AbstractQuadratureRule, el)
 
-Returns the quadrature nodes `x`, weights `w` and unit normals `n` for integrating
-over `el`. The *lifted* quadrature is computed by mapping the reference quadrature
-through `el`. This requires `el` to support the methods `el(x̂)` and `getjacobian(el,x̂)`.
-TODO: CHECK PERFORMANCE
+Returns the quadrature nodes `x` and *lifted* weights `w` for integrating over `el`.
 """
-function get_qnodes_qweights_and_qnormals(q::AbstractQuadratureRule, el)
-    @assert getdomain(el) === getdomain(q) 
-    x̂, ŵ = get_qnodes_and_qweights(q)
-    n = (getnormal(el, xᵢ) for xᵢ in x̂)
-    x, w = _push_forward_quadrature(el, x̂, ŵ)
+function get_qnodes_and_qweights(q::AbstractQuadratureRule, el)
+    qdata = get_quadrature_data(q, el)
+    x, w, _, _ = zip(qdata...)
+    return x, w
+end
+
+"""
+    get_qnodes_qweights_qnormals(q::AbstractQuadratureRule, el)
+
+Returns the quadrature nodes `x`, *lifted* weights `w` and normal vectors `n` 
+for integrating over `el`.
+"""
+function get_qnodes_qweights_qnormals(q::AbstractQuadratureRule, el)
+    qdata = get_quadrature_data(q, el)
+    x, w, _, n = zip(qdata...)
     return x, w, n
 end
 
@@ -76,7 +85,7 @@ on the element `el`. This is simply `sum(dot(f(xᵢ), n(xᵢ)) .* wᵢ)`, where 
 TODO: CHECK PERFORMANCE
 """
 function integrateflux(f, q::AbstractQuadratureRule, el)
-    x, w, n = get_qnodes_qweights_and_qnormals(q, el)
+    x, w, n = get_qnodes_qweights_qnormals(q, el)
     return integrate(f, x, w, n)
 end 
 

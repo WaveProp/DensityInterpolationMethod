@@ -10,11 +10,11 @@ A quadrature rule for integrating a function over the domain `D`.
 An instance `q` of `AbstractQuadratureRule{D}` is expected to implement the
 following methods:
 
-- `q()` : return the nodes `x` and weights `w` of the quadrature rule on the
+- `get_qnodes_and_qweights(q)` : return the nodes `x` and weights `w` of the quadrature rule on the
   reference domain `D`. For performance reasons, the result shoudl depend only
   on the type of `q`.
-- `q(el)` : return the nodes `x` and weights `w` of the quadrature rule on the
-  elemenent `D`. This assumes that `domain(q)==domain(el)`, so that the element
+- `get_qnodes_and_qweights(q,el)` : return the nodes `x` and weights `w` of the quadrature rule on the
+  element `D`. This assumes that `domain(q)==domain(el)`, so that the element
   quadrature can be computed by *pushing forward* a reference quadrature to `el`.
 """
 abstract type AbstractQuadratureRule{D<:AbstractReferenceShape} end

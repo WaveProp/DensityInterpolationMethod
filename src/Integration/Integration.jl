@@ -22,4 +22,5 @@ export
 
 include("quadrature.jl")
 include("meshintegration.jl")
+include("globalquadrature.jl")
 end

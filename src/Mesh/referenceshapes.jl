@@ -14,7 +14,7 @@ Base.in(x,::AbstractReferenceShape) = abstractmethod(typeof(el))
 getvertices(::AbstractReferenceShape) = abstractmethod(typeof(el))
 getcenter(::AbstractReferenceShape) = abstractmethod(typeof(el))
 get_number_of_nodes(::AbstractReferenceShape) = abstractmethod(typeof(el))  # lagrangian nodes
-getgetnodes(::AbstractReferenceShape) = abstractmethod(typeof(el))            # lagrangian nodes
+getnodes(::AbstractReferenceShape) = abstractmethod(typeof(el))            # lagrangian nodes
 
 """
     lagrange_basis(el::AbstractReferenceShape)

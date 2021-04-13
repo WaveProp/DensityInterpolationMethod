@@ -13,7 +13,7 @@ Base.@kwdef struct GenericMesh
     # types (e.g. FlatTriangleElement) and values are vectors
     # of elements.
     etype2elements :: OrderedDict{Any, Vector{<:AbstractElement}} = 
-                          OrderedDict{DataType, Vector{<:AbstractElement}}()    
+                          OrderedDict{Any, Vector{<:AbstractElement}}()    
 end
 
 """
@@ -44,5 +44,14 @@ Returns the total number of elements in the mesh.
 """
 function get_number_of_elements(mesh::GenericMesh)
     return sum(length(v) for v in values(mesh.etype2elements))
+end
+
+"""
+    get_number_of_nodes(mesh::GenericMesh)
+
+Returns the total number of quadrature nodes in the mesh.
+"""
+function get_number_of_nodes(mesh::GenericMesh)
+    return sum(get_number_of_nodes(el) for el in getelements(mesh))
 end
 
