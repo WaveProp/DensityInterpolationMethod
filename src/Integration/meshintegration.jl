@@ -5,10 +5,11 @@
 """
     get_quadrature_data(q::AbstractQuadratureRule, el)
 
-Returns the n-point quadrature data `(d₁, d₂, ..., dₙ)` where `dᵢ = (xᵢ, wᵢ, jacᵢ, nᵢ)`, 
-`xᵢ` are the *lifted* quadrature nodes, `wᵢ` are the *lifted* quadrature weights, `jacᵢ`
-is the jacobian at `xᵢ` and `nᵢ` is the normal at xi, for `i=1:N`. This requires `el` 
-to support the method `getelementdata(el, x̂)`.
+Returns the n-point quadrature data `(d₁, d₂, ..., dₙ)` for the element `el`,
+where `dᵢ = (xᵢ, wᵢ, jacᵢ, nᵢ)`, `xᵢ` are the *lifted* quadrature nodes, 
+`wᵢ` are the *lifted* quadrature weights, `jacᵢ` is the jacobian at `xᵢ` 
+and `nᵢ` is the normal at xi, for `i=1:N`. This requires `el` to support 
+the method `getelementdata(el, x̂)`.
 """
 function get_quadrature_data(q::AbstractQuadratureRule, el)
     @assert getdomain(el) === getdomain(q) 
@@ -82,7 +83,6 @@ end
 Integrates the flux of the function `f` (ℜ³ ⟶ ℜ³) using the quadrature rule `q` 
 on the element `el`. This is simply `sum(dot(f(xᵢ), n(xᵢ)) .* wᵢ)`, where `x` and 
 `w` are the quadrature nodes and weights, respectively, and `n` is the unit normal.
-TODO: CHECK PERFORMANCE
 """
 function integrateflux(f, q::AbstractQuadratureRule, el)
     x, w, n = get_qnodes_qweights_qnormals(q, el)
@@ -110,7 +110,6 @@ end
 
 Integrates the flux of the function `f` on all elements of the mesh `mesh`
 using a Gaussian quadrature of order `order`.
-TODO: CHECK PERFORMANCE
 """
 function integrateflux(mesh::GenericMesh, f; order=2)
     return sum(get_etypes_and_elements(mesh)) do (etype, elements)

@@ -47,11 +47,11 @@ function get_number_of_elements(mesh::GenericMesh)
 end
 
 """
-    get_number_of_nodes(mesh::GenericMesh)
+    get_number_of_lnodes(mesh::GenericMesh)
 
-Returns the total number of quadrature nodes in the mesh.
+Returns the total number of lagrangian nodes in the mesh.
 """
-function get_number_of_nodes(mesh::GenericMesh)
-    return sum(get_number_of_nodes(el) for el in getelements(mesh))
+function get_number_of_lnodes(mesh::GenericMesh)
+    return sum(get_number_of_lnodes(el) for el in getelements(mesh))
 end
 

@@ -28,8 +28,8 @@ export
     # Functions
     getvertices,
     getcenter,
-    get_number_of_nodes,
-    getnodes,
+    get_number_of_lnodes,
+    get_lnodes,
     getjacobian,
     evaluate_and_getjacobian,
     getdomain,

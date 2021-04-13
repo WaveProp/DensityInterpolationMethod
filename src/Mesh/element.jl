@@ -126,9 +126,9 @@ struct LagrangeElement{D, T<:ForwardMap} <: AbstractElement{D}
     # Constructors
     function LagrangeElement{D}(nodes) where D<:AbstractReferenceShape
         domain = D()
-        n_nodes = get_number_of_nodes(domain)
+        n_nodes = get_number_of_lnodes(domain)
         @assert n_nodes == length(nodes)
-        basis = lagrange_basis(domain)
+        basis = get_lagrange_basis(domain)
 
         # Construct Forward Map using Lagrange basis and nodes
         forwardmap = sum(nodes[i] * basis[i] for i in 1:n_nodes)
@@ -158,23 +158,23 @@ function getcenter(el::LagrangeElement)
 end
 
 """
-    getnodes(el::LagrangeElement)
+    get_lnodes(el::LagrangeElement)
 
-Returns the nodes of the element, in parametric coordinates.
+Returns the lagrangian nodes of the element, in parametric coordinates.
 """
-function getnodes(el::LagrangeElement)
+function get_lnodes(el::LagrangeElement)
     dom = getdomain(el)
-    return getnodes(dom)
+    return get_lnodes(dom)
 end
 
 """
-    get_number_of_nodes(el::LagrangeElement)
+    get_number_of_lnodes(el::LagrangeElement)
 
-Returns the number of nodes of the element.
+Returns the number of lagrangian nodes of the element.
 """
-function get_number_of_nodes(el::LagrangeElement)
+function get_number_of_lnodes(el::LagrangeElement)
     dom = getdomain(el)
-    return get_number_of_nodes(dom)
+    return get_number_of_lnodes(dom)
 end
 
 # Some aliases
@@ -196,7 +196,7 @@ The order of the underlying polynomial used to represent this type of element.
 getorder(::LagrangeElement) = abstractmethod(typeof(el))
 function getorder(el::LagrangeElement{<:ReferenceTriangle})
     dom = getdomain(el)
-    Np = get_number_of_nodes(dom)
+    Np = get_number_of_lnodes(dom)
     p = (-3 + sqrt(1+8*Np))/2
     msg = "unable to determine order for LagrangeTriangle containing Np=$(Np) interpolation points.
            Need `Np = (p+1)*(p+2)/2` for some integer `p`."

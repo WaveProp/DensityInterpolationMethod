@@ -24,7 +24,13 @@ refer to https://github.com/plotly/plotly.py/issues/2194.
         coords_dict[FlatTriangleElement]
 
     for el in getelements(mesh)
-        coords = coords_dict[typeof(el)]
+        if el isa FlatTriangleElement
+            coords = coords_dict[FlatTriangleElement]
+        elseif el isa QuadraticTriangleElement
+            coords = coords_dict[QuadraticTriangleElement]
+        else
+            notimplemented()
+        end
         @series begin
             PlotElement(), el, coords
         end
@@ -138,16 +144,16 @@ end
     return x, y, z
 end
 
-@recipe function f(::Type{FlatTriangleElement}, el::FlatTriangleElement)
-    n = getnodes(el)
+@recipe function f(el::FlatTriangleElement)
+    n = get_lnodes(el)
     # Reorder nodes for visualization purposes
     nodList = (n[1], n[2], n[3], n[1]) 
     ptList = [el(nod) for nod in nodList]
     return ptList
 end
 
-@recipe function f(::Type{QuadraticTriangleElement}, el::QuadraticTriangleElement)
-    n = getnodes(el)
+@recipe function f(el::QuadraticTriangleElement)
+    n = get_lnodes(el)
     # Reorder nodes for visualization purposes
     nodList = (n[1], n[4], n[2], n[5], n[3], n[6], n[1])   
     ptList = [el(nod) for nod in nodList]
