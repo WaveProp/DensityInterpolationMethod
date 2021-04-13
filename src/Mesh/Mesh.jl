@@ -31,6 +31,7 @@ export
     get_number_of_nodes,
     getnodes,
     getjacobian,
+    evaluate_and_getjacobian,
     getdomain,
     getmeasure,
     getnormal,

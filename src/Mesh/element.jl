@@ -35,6 +35,15 @@ function getjacobian(el::AbstractElement, x)
 end
 
 """
+    evaluate_and_getjacobian(el::AbstractElement, u)
+
+Returns the element parametrization and jacobian evaluated at `u`.
+"""
+function evaluate_and_getjacobian(el::AbstractElement, u)
+    abstractmethod(typeof(el))
+end
+
+"""
     getdomain(el::AbstractElement)
 
 Returns an instance of the singleton type `D` ⊂ ℜ²; i.e. the reference element.
@@ -93,8 +102,7 @@ Returns a tuple `(el_eval, jac, μ, n)`, where `el_eval` is the element parametr
 parametric coordinates `u`.
 """
 function getelementdata(el::AbstractElement, u::AbstractVector)
-    el_eval = el(u)
-    jac = getjacobian(el, u)
+    el_eval, jac = evaluate_and_getjacobian(el, u)
     μ = getmeasure(jac)
     n = getnormal(jac)
     return el_eval, jac, μ, n
@@ -207,3 +215,9 @@ function getjacobian(el::LagrangeElement, u)
     @assert u ∈ getdomain(el)
     return StaticPolynomials.jacobian(el.forwardmap, u)
 end 
+
+function evaluate_and_getjacobian(el::LagrangeElement, u) 
+    @assert length(u) == DIMENSION2    
+    @assert u ∈ getdomain(el)
+    return StaticPolynomials.evaluate_and_jacobian(el.forwardmap, u)
+end
