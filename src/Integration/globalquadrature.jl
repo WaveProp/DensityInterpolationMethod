@@ -37,15 +37,15 @@ Generates a GlobalQuadrature struct from a GenericMesh using a quadrature
 rule of order `order`.
 """
 function generate_globalquadrature(mesh::GenericMesh; order=2)
-    n_nodes = get_number_of_lnodes(mesh)
-    gquad = GlobalQuadrature{n_nodes}()
+    n_qnodes = get_number_of_qnodes(mesh, order)
+    gquad = GlobalQuadrature{n_qnodes}()
 
     index = 1  # for computing the element indices
     for (etype, elements) in get_etypes_and_elements(mesh)
         qrule = get_qrule_for_element(etype, order)
         index = _add_elementlist_to_gquad(gquad, elements, qrule, index)
     end
-    #@assert index == n_nodes+1
+    @assert index == n_qnodes+1
     return gquad
 end
 function _add_elementlist_to_gquad(gquad::GlobalQuadrature, elements, qrule, index)
@@ -70,11 +70,11 @@ function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, index)
 end
 
 """
-    get_number_of_nodes(gquad::GlobalQuadrature{N})
+    get_number_of_qnodes(gquad::GlobalQuadrature{N})
 
 Returns the total number of quadrature nodes of the GlobalQuadrature.
 """
-function get_number_of_nodes(gquad::GlobalQuadrature{N}) where N
+function get_number_of_qnodes(gquad::GlobalQuadrature{N}) where N
     return N
 end
 

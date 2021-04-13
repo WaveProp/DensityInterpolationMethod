@@ -88,6 +88,16 @@ GaussQuadrature(ref;n) = GaussQuadrature{typeof(ref),n}()
 end
 
 """
+    get_number_of_qnodes(q::GaussQuadrature{D, N})
+
+Returns the total number of quadrature nodes (for a single element) 
+associated with the quadrature rule `q`.
+"""
+function get_number_of_qnodes(q::GaussQuadrature{D, N}) where {D, N}
+    return N
+end
+
+"""
     get_qrule_for_reference_shape(ref,order)
 
 Given a `ref`erence shape and a desired quadrature `order`, return

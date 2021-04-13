@@ -120,3 +120,16 @@ end
 function _integrateflux_element_list(f, q::AbstractQuadratureRule, elements)
     return sum(integrateflux(f, q, el) for el in elements)
 end
+
+"""
+    get_number_of_qnodes(mesh::GenericMesh)
+
+Returns the total number of quadrature nodes of a GenericMesh, 
+for a quadrature rule of order `order`.
+"""
+function get_number_of_qnodes(mesh::GenericMesh, order)
+    return sum(get_etypes_and_elements(mesh)) do (etype,elements)
+        qrule = get_qrule_for_element(etype, order)
+        length(elements) * get_number_of_qnodes(qrule)
+    end
+end
