@@ -14,23 +14,34 @@ const JacMatrix = SMatrix{DIMENSION3, DIMENSION2,
 """
     struct GlobalQuadrature
 
-Structure that contains the concrete information of the `N`-point quadrature,
+Structure that contains the concrete information of the quadrature,
 i.e., quadrature nodes, weigths, normals, jacobians and elements.
 """                        
-Base.@kwdef struct GlobalQuadrature{N}
-    nodes::Vector{Point3D} = zeros(Point3D, N)          # List of quadrature nodes
-    weigths::Vector{Float64} = zeros(Float64, N)        # List of *lifted* quadrature weigths
-    jacobians::Vector{JacMatrix} = zeros(JacMatrix, N)  # List of jacobian matrices at qnodes
-    normals::Vector{Point3D} = zeros(Point3D, N)        # List of normal vectors at qnodes
+struct GlobalQuadrature
+    nodes::Vector{Point3D}          # List of *lifted* quadrature nodes
+    weigths::Vector{Float64}        # List of *lifted* quadrature weigths
+    jacobians::Vector{JacMatrix}    # List of jacobian matrices at qnodes
+    normals::Vector{Point3D}        # List of normal vectors at qnodes
     
     # List of elements.
-    # Each entry is an SVector `[a, b]` that correpond 
-    # to the initial qnode index and the final qnode index for each 
-    # element, inclusive.
-    el2indices::Vector{SVector{2, Int64}} = SVector{2, Int64}[]       
+    # Each element correspond to a vector `[i₁, i₂, ..., iₙ]` which 
+    # contains the indices of the `n` qnodes of the element.
+    el2indices::Vector{Vector{Int64}}     
     
     # Mapping from qnode indices to element indices.
-    index2element::Vector{Int64} = zeros(Int64, N) 
+    index2element::Vector{Int64}
+
+    # Constructor
+    function GlobalQuadrature(n_qnodes, n_elements)
+        nodes = Vector{Point3D}(undef, n_qnodes)
+        weigths = Vector{Float64}(undef, n_qnodes)
+        jacobians = Vector{JacMatrix}(undef, n_qnodes)
+        normals = Vector{Point3D}(undef, n_qnodes)
+        el2indices = Vector{Vector{Int64}}(undef, n_elements)
+        index2element = Vector{Int64}(undef, n_qnodes)
+        return new(nodes, weigths, jacobians, 
+                   normals, el2indices, index2element)
+    end
 end
 
 """
@@ -41,7 +52,8 @@ rule of order `order`.
 """
 function generate_globalquadrature(mesh::GenericMesh; order=2)
     n_qnodes = get_number_of_qnodes(mesh, order)
-    gquad = GlobalQuadrature{n_qnodes}()
+    n_elements = get_number_of_elements(mesh)
+    gquad = GlobalQuadrature(n_qnodes, n_elements)
 
     index = 1  # for computing the element indices
     for (etype, elements) in get_etypes_and_elements(mesh)
@@ -80,17 +92,17 @@ function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, index)
     final_index = index-1
 
     # Save element data
-    push!(gquad.el2indices, SVector(initial_index, final_index))
+    gquad.el2indices[element_index] = collect(initial_index:final_index)
     return index
 end
 
 """
-    get_number_of_qnodes(gquad::GlobalQuadrature{N})
+    get_number_of_qnodes(gquad::GlobalQuadrature)
 
 Returns the total number of quadrature nodes of the GlobalQuadrature.
 """
-function get_number_of_qnodes(gquad::GlobalQuadrature{N}) where N
-    return N
+function get_number_of_qnodes(gquad::GlobalQuadrature)
+    return length(gquad.nodes)
 end
 
 """

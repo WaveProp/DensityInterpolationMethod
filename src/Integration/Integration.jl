@@ -12,7 +12,6 @@ using DensityInterpolationMethod.Utils
 using DensityInterpolationMethod.Mesh
 import DensityInterpolationMethod.Mesh: getdomain, 
                                         get_number_of_lnodes, 
-                                        get_number_of_qnodes,
                                         get_number_of_elements
 export 
     # Abstract types
