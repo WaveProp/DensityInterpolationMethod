@@ -56,9 +56,9 @@ function _initialize_mesh()
 
     # Generate mesh
     mesh = GenericMesh()
-    for (etype, elNodeTags) in zip(elementTypes, elNodeTagsList)
+    for (gmsh_etype, elNodeTags) in zip(elementTypes, elNodeTagsList)
         # Map gmsh type tags to actual internal types
-        etype, nodes_per_element = _get_gmsh_element_data(etype)
+        etype, nodes_per_element = _get_gmsh_element_data(gmsh_etype)
         elements = etype[]
 
         # Process element node tags
@@ -103,7 +103,7 @@ the dictionary `tag2index`, that maps node tags into node indices,
 and the element node tags `tags`.
 """
 function _generate_element(etype, tag2node, tags)
-    element_nodes = [tag2node[t] for t in tags]
+    element_nodes = (tag2node[t] for t in tags)
     element = etype(element_nodes)
     return element
 end

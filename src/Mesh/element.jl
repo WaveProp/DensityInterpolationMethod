@@ -109,44 +109,43 @@ function getelementdata(el::AbstractElement, u::AbstractVector)
 end
 
 """
-    struct LagrangeElement{D} <: AbstractElement{D}
+    struct LagrangeElement{D, N} <: AbstractElement{D}
     
-A lagrange element is represented as a polynomial mapping the `Np` reference
-lagrangian nodes of the reference element `D` into `nodes`.
-
-The element's parametrization is fully determined by the image of the `Np`
-reference points through polynomial interpolation.
+A lagrange element is represented as a polynomial mapping the `N` reference
+lagrangian nodes of the reference element `D` into `nodes`. The `M` parameter
+is always equal to `DIMENSION3 * N`
+The element's parametrization is fully determined by the image of the `N`
+reference points through the Forward Map (StaticPolynomial) defined in `D`.
 """
-struct LagrangeElement{D, T<:ForwardMap} <: AbstractElement{D}
-    # Polynomial that represents the mapping from the reference element `D` ⊂ ℜ²
-    # to the element ⊂ ℜ³.
-    # StaticPolynomials.PolynomialSystem is used for fast evaluations.
-    forwardmap::T
+struct LagrangeElement{D, N, M} <: AbstractElement{D}
+    # 3D Lagrange nodes of the element.
+    # Each column represents a node.
+    # The nodes are saved in an SMatrix so it can be passed
+    # efficiently to the Forward Map (StaticPolynomial)
+    nodes::SMatrix{DIMENSION3, N, Float64, M}
 
-    # Constructors
-    function LagrangeElement{D}(nodes) where D<:AbstractReferenceShape
-        domain = D()
-        n_nodes = get_number_of_lnodes(domain)
-        @assert n_nodes == length(nodes)
-        basis = get_lagrange_basis(domain)
-
-        # Construct Forward Map using Lagrange basis and nodes
-        forwardmap = sum(nodes[i] * basis[i] for i in 1:n_nodes)
-        # Convert to StaticPolynomials.PolynomialSystem
-        forwardmap = PolynomialSystem(forwardmap)   
-        return new{D, typeof(forwardmap)}(forwardmap)
-    end
-    function LagrangeElement{D}(nodes::AbstractVector{Point3D}) where D<:AbstractReferenceShape
-        # Convert static arrays to regular arrays.
-        # For the moment, StaticPolynomials doesn't accept StaticArrays
-        # for constructing a PolynomialSystem.
-        # (although accepts StaticArrays for evaluating PolynomialSystem, 
-        # and the result will be an StaticArray.)
-        nodes = [[x, y, z] for (x, y, z) in nodes]
-        return LagrangeElement{D}(nodes)
+    # Constructor
+    function LagrangeElement{D, N, M}(nodes_list) where {D<:AbstractReferenceShape,N,M}
+        @assert M == N * DIMENSION3
+        @assert N == length(nodes_list)
+        # Arrange nodes into SMatrix
+        nodes = SMatrix{DIMENSION3, N}(vcat(nodes_list...))
+        return new{D, N, M}(nodes)
     end
 end
 
+"""
+    get_lagrange_elemtype(D::Type{<:AbstractReferenceShape})
+
+Returns the corresponding LagrangeElement type associated with
+`D::Type{<:AbstractReferenceShape}`.
+"""
+function get_lagrange_elemtype(D::Type{<:AbstractReferenceShape}) 
+    N = get_number_of_lnodes(D())
+    M = DIMENSION3 * N
+    return LagrangeElement{D, N, M}
+end
+                                                          
 """
     getcenter(el::LagrangeElement)
 
@@ -172,21 +171,20 @@ end
 
 Returns the number of lagrangian nodes of the element.
 """
-function get_number_of_lnodes(el::LagrangeElement)
-    dom = getdomain(el)
-    return get_number_of_lnodes(dom)
+function get_number_of_lnodes(el::LagrangeElement{D, N}) where {D,N}
+    return N
 end
 
 # Some aliases
 """
     const FlatTriangleElement = LagrangeElement{ReferenceTriangle3}
 """
-const FlatTriangleElement = LagrangeElement{ReferenceTriangle3}
+const FlatTriangleElement = get_lagrange_elemtype(ReferenceTriangle3)
 
 """
     const QuadraticTriangleElement = LagrangeElement{ReferenceTriangle6}
 """
-const QuadraticTriangleElement = LagrangeElement{ReferenceTriangle6}
+const QuadraticTriangleElement = get_lagrange_elemtype(ReferenceTriangle6)
 
 """
     getorder(el::LagrangeElement)
@@ -195,8 +193,7 @@ The order of the underlying polynomial used to represent this type of element.
 """
 getorder(::LagrangeElement) = abstractmethod(typeof(el))
 function getorder(el::LagrangeElement{<:ReferenceTriangle})
-    dom = getdomain(el)
-    Np = get_number_of_lnodes(dom)
+    Np = get_number_of_lnodes(el)
     p = (-3 + sqrt(1+8*Np))/2
     msg = "unable to determine order for LagrangeTriangle containing Np=$(Np) interpolation points.
            Need `Np = (p+1)*(p+2)/2` for some integer `p`."
@@ -206,18 +203,24 @@ function getorder(el::LagrangeElement{<:ReferenceTriangle})
 
 function (el::LagrangeElement)(u)
     @assert length(u) == DIMENSION2
-    @assert u ∈ getdomain(el) 
-    return StaticPolynomials.evaluate(el.forwardmap, u)
+    domain = getdomain(el) 
+    @assert u ∈ domain
+    forwardmap = get_forwardmap(domain)
+    return StaticPolynomials.evaluate(forwardmap, u, el.nodes)
 end
 
 function getjacobian(el::LagrangeElement, u) 
-    @assert length(u) == DIMENSION2    
-    @assert u ∈ getdomain(el)
-    return StaticPolynomials.jacobian(el.forwardmap, u)
+    @assert length(u) == DIMENSION2
+    domain = getdomain(el) 
+    @assert u ∈ domain
+    forwardmap = get_forwardmap(domain)
+    return StaticPolynomials.jacobian(forwardmap, u, el.nodes)
 end 
 
 function evaluate_and_getjacobian(el::LagrangeElement, u) 
-    @assert length(u) == DIMENSION2    
-    @assert u ∈ getdomain(el)
-    return StaticPolynomials.evaluate_and_jacobian(el.forwardmap, u)
+    @assert length(u) == DIMENSION2
+    domain = getdomain(el) 
+    @assert u ∈ domain
+    forwardmap = get_forwardmap(domain)
+    return StaticPolynomials.evaluate_and_jacobian(forwardmap, u, el.nodes)
 end

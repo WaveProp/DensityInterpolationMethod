@@ -29,13 +29,12 @@ Returns the lagrangian nodes coordinates of an AbstractReferenceShape.
 get_lnodes(::AbstractReferenceShape) = abstractmethod(typeof(el))          
 
 """
-    get_lagrange_basis(el::AbstractReferenceShape)
+    get_forwardmap(el::AbstractReferenceShape)
 
-Function that returns the Lagrange Polynomial basis associated with 
-the reference shape `el`. Returns a tuple (b_1, ..., b_n), where b_i
-is the Lagrange polynomial associated with node n_i of `el`.
+Function that returns the Forward Map (StaticPolynomial) associated with 
+the reference shape `el`. 
 """
-function get_lagrange_basis(el::AbstractReferenceShape)
+function get_forwardmap(el::AbstractReferenceShape)
     abstractmethod(typeof(el))
 end
 
@@ -60,8 +59,8 @@ end
 get_number_of_lnodes(::ReferenceTriangle3) = 3
 get_lnodes(::ReferenceTriangle3) = Point2D(0,0), Point2D(1,0), Point2D(0,1)
 
-function get_lagrange_basis(el::ReferenceTriangle3)
-    return _ReferenceTriangle3_basis
+function get_forwardmap(el::ReferenceTriangle3)
+    return _ReferenceTriangle3_forwardmap
 end
 
 """
@@ -76,7 +75,7 @@ get_number_of_lnodes(::ReferenceTriangle6) = 6
 get_lnodes(::ReferenceTriangle6) = Point2D(0,0), Point2D(1,0), Point2D(0,1),
                               Point2D(1/2,0), Point2D(1/2,1/2), Point2D(0,1/2)
 
-function get_lagrange_basis(el::ReferenceTriangle6)
-    return _ReferenceTriangle6_basis
+function get_forwardmap(el::ReferenceTriangle6)
+    return _ReferenceTriangle6_forwardmap
 end
 

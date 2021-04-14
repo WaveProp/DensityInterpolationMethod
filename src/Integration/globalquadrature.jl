@@ -70,9 +70,6 @@ function _add_elementlist_to_gquad(gquad::GlobalQuadrature, elements, qrule, ind
     return index
 end
 function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, index)
-    qdata = get_quadrature_data(qrule, el)
-    initial_index = index
-
     # Get element index
     if index > 1
         element_index = gquad.index2element[index-1]+1
@@ -81,6 +78,9 @@ function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, index)
     end
 
     # Save data in GlobalQuadrature
+    qdata = get_quadrature_data(qrule, el)
+    initial_index = index
+
     for (xᵢ, wᵢ, jacᵢ, nᵢ) in qdata
         gquad.nodes[index] = xᵢ
         gquad.weigths[index] = wᵢ
