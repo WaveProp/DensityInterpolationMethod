@@ -25,9 +25,12 @@ Base.@kwdef struct GlobalQuadrature{N}
     
     # List of elements.
     # Each entry is an SVector `[a, b]` that correpond 
-    # to the initial index and the final index for each 
+    # to the initial qnode index and the final qnode index for each 
     # element, inclusive.
-    el2indices::Vector{SVector{2, Int64}} = SVector{2, Int64}[]            
+    el2indices::Vector{SVector{2, Int64}} = SVector{2, Int64}[]       
+    
+    # Mapping from qnode indices to element indices.
+    index2element::Vector{Int64} = zeros(Int64, N) 
 end
 
 """
@@ -57,14 +60,26 @@ end
 function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, index)
     qdata = get_quadrature_data(qrule, el)
     initial_index = index
+
+    # Get element index
+    if index > 1
+        element_index = gquad.index2element[index-1]+1
+    else
+        element_index = 1
+    end
+
+    # Save data in GlobalQuadrature
     for (xᵢ, wᵢ, jacᵢ, nᵢ) in qdata
         gquad.nodes[index] = xᵢ
         gquad.weigths[index] = wᵢ
         gquad.jacobians[index] = jacᵢ
         gquad.normals[index] = nᵢ
+        gquad.index2element[index] = element_index
         index += 1
     end
     final_index = index-1
+
+    # Save element data
     push!(gquad.el2indices, SVector(initial_index, final_index))
     return index
 end
