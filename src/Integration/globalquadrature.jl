@@ -80,7 +80,6 @@ function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, index)
     # Save data in GlobalQuadrature
     qdata = get_quadrature_data(qrule, el)
     initial_index = index
-
     for (xᵢ, wᵢ, jacᵢ, nᵢ) in qdata
         gquad.nodes[index] = xᵢ
         gquad.weigths[index] = wᵢ
@@ -113,3 +112,33 @@ Returns the total number of elements of the GlobalQuadrature.
 function get_number_of_elements(gquad::GlobalQuadrature)
     return length(gquad.el2indices)
 end
+
+"""
+    get_inelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
+
+Given a `qnode_index`, returns the indices of the qnodes that lie on the same
+element.
+"""
+function get_inelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
+    element_index = gquad.index2element[qnode_index]
+    inelement_qnode_indices = gquad.el2indices[element_index]
+    return inelement_qnode_indices
+end
+
+"""
+    get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
+
+Given a `qnode_index`, returns an iterator with the indices of the qnodes 
+that do not lie on the same element. This assumes that the qnodes indices of
+an element are stored contiguously (not necessarily in order).
+"""
+function get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
+    inelement_qnode_indices = get_inelement_qnode_indices(gquad, qnode_index)
+    min_index, max_index = extrema(inelement_qnode_indices)
+    n_qnodes = get_number_of_qnodes(gquad)
+    iterator = Iterators.flatten((1:min_index-1, 
+                                  max_index+1:n_qnodes))
+    return iterator
+end
+
+
