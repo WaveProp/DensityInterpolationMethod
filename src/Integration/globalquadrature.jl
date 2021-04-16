@@ -141,4 +141,14 @@ function get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
     return iterator
 end
 
+"""
+    get_nodedata_from_element(gquad::GlobalQuadrature, element)
 
+Returns the node data `(nodes, normals, jacobians)` in `element`.
+"""
+function get_nodedata_from_element(gquad::GlobalQuadrature, element)
+    nodes = gquad.nodes[element]
+    normals = gquad.normals[element]
+    jacobians = gquad.jacobians[element]
+    return nodes, normals, jacobians
+end
