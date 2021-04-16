@@ -109,7 +109,7 @@ function getelementdata(el::AbstractElement, u::AbstractVector)
 end
 
 """
-    struct LagrangeElement{D, N} <: AbstractElement{D}
+    struct LagrangeElement{D, N, M} <: AbstractElement{D}
     
 A lagrange element is represented as a polynomial mapping the `N` reference
 lagrangian nodes of the reference element `D` into `nodes`. The `M` parameter

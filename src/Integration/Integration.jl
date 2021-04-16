@@ -25,7 +25,6 @@ export
     get_number_of_qnodes,
     get_number_of_elements
 
-
 include("quadrature.jl")
 include("meshintegration.jl")
 include("globalquadrature.jl")
