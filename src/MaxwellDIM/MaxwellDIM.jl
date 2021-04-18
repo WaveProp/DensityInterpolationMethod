@@ -16,5 +16,6 @@ using DensityInterpolationMethod.Utils
 
 include("lebedev.jl")
 include("maxwell.jl")
+include("dimdata.jl")
 include("dim.jl")
 end

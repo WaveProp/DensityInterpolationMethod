@@ -114,25 +114,25 @@ function get_number_of_elements(gquad::GlobalQuadrature)
 end
 
 """
-    get_inelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
+    get_inelement_qnode_indices(gquad::GlobalQuadrature, qnode_index::Integer)
 
 Given a `qnode_index`, returns the indices of the qnodes that lie on the same
 element.
 """
-function get_inelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
+function get_inelement_qnode_indices(gquad::GlobalQuadrature, qnode_index::Integer)
     element_index = gquad.index2element[qnode_index]
     inelement_qnode_indices = gquad.el2indices[element_index]
     return inelement_qnode_indices
 end
 
 """
-    get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
+    get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index::Integer)
 
 Given a `qnode_index`, returns an iterator with the indices of the qnodes 
 that do not lie on the same element. This assumes that the qnodes indices of
 an element are stored contiguously (not necessarily in order).
 """
-function get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
+function get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index::Integer)
     inelement_qnode_indices = get_inelement_qnode_indices(gquad, qnode_index)
     min_index, max_index = extrema(inelement_qnode_indices)
     n_qnodes = get_number_of_qnodes(gquad)
@@ -142,10 +142,15 @@ function get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index)
 end
 
 """
+    get_nodedata_from_element(gquad::GlobalQuadrature, element_index::Integer)
     get_nodedata_from_element(gquad::GlobalQuadrature, element)
 
 Returns the node data `(nodes, normals, jacobians)` in `element`.
 """
+function get_nodedata_from_element(gquad::GlobalQuadrature, element_index::Integer)
+    element = gquad.el2indices[element_index]
+    return get_nodedata_from_element(gquad::GlobalQuadrature, element)
+end
 function get_nodedata_from_element(gquad::GlobalQuadrature, element)
     nodes = gquad.nodes[element]
     normals = gquad.normals[element]
@@ -156,8 +161,8 @@ end
 """ 
     compute_bounding_box(gquad::GlobalQuadrature)
 
-Returns the bounding box `[low_corner, high_corner]` of the
-quadrature nodes in `gquad`.
+Returns the bounding box `[low_corner, high_corner]` and the 
+bounding box center of the quadrature nodes in `gquad`.
 """
 function compute_bounding_box(gquad::GlobalQuadrature)
     low_corner = first(gquad.nodes)
@@ -166,5 +171,7 @@ function compute_bounding_box(gquad::GlobalQuadrature)
         low_corner = min.(low_corner, pt)
         high_corner = max.(high_corner, pt)
     end
-    return SVector(low_corner, high_corner)
+    bbox = SVector(low_corner, high_corner)
+    center = (low_corner + high_corner) / 2
+    return bbox, center
 end

@@ -1,35 +1,17 @@
 """
-Structures and methods for solving Maxwell's equations using 
+Methods for solving Maxwell's equations using 
 Density Interpolation Method.
 """
 
-"""
-    struct DimData
-
-Structure that contains all necessary data
-for the Density Interpolation Method.
-"""
-struct DimData
-    mesh::GenericMesh              # Contains the elements parametrization
-    gquad::GlobalQuadrature        # Contains quadrature data
-    k::Float64                     # Wavenumber
-
-    # Surface density ϕ at quadrature nodes yⱼ.
-    # Each entry (ϕ₁, ϕ₂) correspond to the coefficients
-    # in ϕ(yⱼ) = ϕ₁τ₁ + ϕ₂τ₂, where τ₁,τ₂ are the tangential 
-    # vectors at the quadrature node yⱼ.
-    ϕ::Vector{Point2D}
-end
-
 # In construction...
-function construct_density_interpolant(dimdata::DimData, element, src_points)
-    α = 1
-    β = 1
-
+function construct_density_interpolant(dimdata::DimData, element_index)
     # Get data
-    node_list, normal_list, jac_list = get_nodedata_from_element(dimdata.gquad, element)
-    n_qnodes = length(qnodes)
-    n_src = length(src_points)
+    k, α, β = getparameters(dimdata)
+    src_list = dimdata.src_list
+    qnode_list, normal_list, jac_list = get_nodedata_from_element(dimdata.gquad, 
+                                                                  element_index)
+    n_qnodes = length(qnodes)        # number of qnodes
+    n_src = length(src_list)         # number of src points
 
     # Initialize matrices
     # 6 equations per qnode
@@ -39,14 +21,14 @@ function construct_density_interpolant(dimdata::DimData, element, src_points)
 
     # Assemble system
     for r_index in 1:n_qnodes
-        node = node_list[r_index]
-        normal = normal_list[r_index]
-        jacobian = jac_list[r_index]
-        ϕcoeff = dimdata.ϕ[r_index]
+        qnode = qnode_list[r_index]         # quadrature node
+        normal = normal_list[r_index]       # normal at qnode
+        jacobian = jac_list[r_index]        # jacobian at qnode
+        ϕcoeff = dimdata.ϕcoeff[r_index]    # density coefficients at qnode
         _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index)
         for l_index in 1:n_src
-            src = src_points[l_index]
-            _assemble_matrix!(Mmatrix, node, normal, src, dimdata.k, 
+            src = src_list[l_index]       # src point
+            _assemble_matrix!(Mmatrix, qnode, normal, src, k, 
                               n_qnodes, r_index, l_index) 
         end
     end
@@ -55,7 +37,7 @@ function construct_density_interpolant(dimdata::DimData, element, src_points)
     # Direct solver (for the moment...)
     _apply_scaling_to_rhs!(Bvector, α, β)
     Ccoeff = Mmatrix \ Bvector
-    return Ccoeff
+    save_ccoeff!(dimdata, Ccoeff, element_index)
 end
 function _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index) 
     rhs = jacobian * ϕcoeff   # ϕ₁τ₁ + ϕ₂τ₂, where τ₁,τ₂ are the tangential vectors
@@ -65,12 +47,12 @@ function _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index)
         index += 1
     end
 end
-function _assemble_matrix!(Mmatrix, node, normal, src, k, n_qnodes, r_index, l_index) 
+function _assemble_matrix!(Mmatrix, qnode, normal, src, k, n_qnodes, r_index, l_index) 
     # γ₀G
-    M0submatrix = single_layer_kernel(node, src, k, normal)  
+    M0submatrix = single_layer_kernel(qnode, src, k, normal)  
     # -n x γ₁G
     M1submatrix = -cross_product_matrix(normal) * 
-                  double_layer_kernel(node, src, k, normal)  
+                  double_layer_kernel(qnode, src, k, normal)  
 
     # Initial indices (i, j)
     initial_i0 = 3*r_index - 2              # for M0
