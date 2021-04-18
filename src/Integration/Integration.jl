@@ -17,6 +17,7 @@ export
     # Abstract types
     AbstractQuadratureRule,
     # Types
+    GlobalQuadrature,
     # Functions
     integrate,
     integrateflux,

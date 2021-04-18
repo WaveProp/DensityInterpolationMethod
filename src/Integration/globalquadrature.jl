@@ -152,3 +152,19 @@ function get_nodedata_from_element(gquad::GlobalQuadrature, element)
     jacobians = gquad.jacobians[element]
     return nodes, normals, jacobians
 end
+
+""" 
+    compute_bounding_box(gquad::GlobalQuadrature)
+
+Returns the bounding box `[low_corner, high_corner]` of the
+quadrature nodes in `gquad`.
+"""
+function compute_bounding_box(gquad::GlobalQuadrature)
+    low_corner = first(gquad.nodes)
+    high_corner = first(gquad.nodes)
+    for pt in gquad.nodes
+        low_corner = min.(low_corner, pt)
+        high_corner = max.(high_corner, pt)
+    end
+    return SVector(low_corner, high_corner)
+end
