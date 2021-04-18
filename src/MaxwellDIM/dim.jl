@@ -10,7 +10,7 @@ function construct_density_interpolant(dimdata::DimData, element_index)
     src_list = dimdata.src_list
     qnode_list, normal_list, jac_list = get_nodedata_from_element(dimdata.gquad, 
                                                                   element_index)
-    n_qnodes = length(qnodes)        # number of qnodes
+    n_qnodes = length(qnode_list)    # number of qnodes
     n_src = length(src_list)         # number of src points
 
     # Initialize matrices

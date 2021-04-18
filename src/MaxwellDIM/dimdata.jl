@@ -59,8 +59,8 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
 
     # compute source points
     bbox, bbox_center, bbox_radius = compute_bounding_box(gquad)
-    src_radius = r * radius
-    src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_radius)
+    src_radius = r * bbox_radius
+    src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
     return DimData(mesh, gquad, k, α, β, ϕcoeff, ccoeff, src_list)
 end
 

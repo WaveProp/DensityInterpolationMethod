@@ -2,7 +2,6 @@
 Definition of Lebedev points on the unit sphere.
 """
 
-
 """
     get_sphere_sources_lebedev(nsources, radius, center)
 

@@ -46,6 +46,7 @@ assumes that the elements correspond to surface elements only.
 function _initialize_mesh()
     nodeTags, nodes, _ = gmsh.model.mesh.getNodes()
     n_nodes = length(nodeTags)
+    @assert n_nodes>0 "Mesh is empty!"
 
     # Process node tags and nodes
     nodes = reinterpret(Point3D, nodes) |> collect

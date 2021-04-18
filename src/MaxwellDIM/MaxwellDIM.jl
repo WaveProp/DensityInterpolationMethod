@@ -14,6 +14,12 @@ using DensityInterpolationMethod.Mesh
 using DensityInterpolationMethod.Integration
 using DensityInterpolationMethod.Utils
 
+export 
+    # Abstract types
+    # Types
+    # Functions
+    generate_dimdata
+
 include("lebedev.jl")
 include("maxwell.jl")
 include("dimdata.jl")
