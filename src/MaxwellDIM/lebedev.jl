@@ -2,6 +2,22 @@
 Definition of Lebedev points on the unit sphere.
 """
 
+
+"""
+    get_sphere_sources_lebedev(nsources, radius, center)
+
+Returns the Lebedev points on the sphere of radius `radius`
+and center `center`.
+"""
+function get_sphere_sources_lebedev(nsources, radius, center)
+    lpts = lebedev_points(nsources)
+    Xs = Point3D[]
+    for pt in lpts
+        push!(Xs, radius*pt .+ center)
+    end
+    return Xs
+end
+
 """
     lebedev_points(n)
 

@@ -27,7 +27,8 @@ export
     get_number_of_elements,
     get_inelement_qnode_indices,
     get_outelement_qnode_indices,
-    get_nodedata_from_element
+    get_nodedata_from_element,
+    compute_bounding_box
 
 include("quadrature.jl")
 include("meshintegration.jl")

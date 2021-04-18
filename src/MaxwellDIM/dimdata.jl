@@ -13,7 +13,6 @@ struct DimData
     # Mesh and quadrature data
     mesh::GenericMesh              # Contains the elements parametrization
     gquad::GlobalQuadrature        # Contains quadrature data
-    bbox::SVector{2, Point3D}      # Bounding box `[low_corner, high_corner]`
 
     # Parameters (maybe move this to a mutable struct?)
     k::Float64       # Wavenumber               
@@ -36,6 +35,36 @@ struct DimData
 end
 
 """
+    generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14, r=5)
+
+Generates a `DimData` structure from `mesh::GenericMesh`.
+
+# Arguments
+- `mesh::GenericMesh`: mesh of elements parametrization.
+- `qorder=2`: quadrature order.
+- `k=1`: wavenumber.
+- `α=1`: density interpolant `α` parameter.
+- `β=1`: density interpolant `β` parameter.
+- `n_src=14`: number of density interpolant source points.
+- `r=5`: radius factor of density interpolant source points sphere.
+"""
+function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14, r=5)
+    gquad = generate_globalquadrature(mesh, order=qorder)
+    n_qnodes = get_number_of_qnodes(gquad)
+    n_elements = get_number_of_elements(gquad)
+    
+    ϕcoeff = zeros(SVector{2, ComplexF64}, n_qnodes)
+    n_ccoef = DIMENSION3 * n_qnodes   # density interpolation coeffs: 3 per qnode
+    ccoeff = [zeros(ComplexF64, n_ccoef) for _ in 1:n_elements]
+
+    # compute source points
+    bbox, bbox_center, bbox_radius = compute_bounding_box(gquad)
+    src_radius = r * radius
+    src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_radius)
+    return DimData(mesh, gquad, k, α, β, ϕcoeff, ccoeff, src_list)
+end
+
+"""
     getparameters(dimdata::DimData)
 
 Returns the wavenumber `k` and the `α`, `β` density 
@@ -46,11 +75,11 @@ function getparameters(dimdata::DimData)
 end
 
 """
-    save_ccoeff!(dimdata::DimData, ccoeff, element_index)
+    save_densitycoeff!(dimdata::DimData, ccoeff, element_index)
 
 Saves the density interpolant coefficients `cⱼ` for element `eⱼ`,
 with `j = element_index`.
 """
-function save_ccoeff!(dimdata::DimData, ccoeff, element_index)
+function save_densitycoeff!(dimdata::DimData, ccoeff, element_index)
     dimdata.ccoeff[element_index] = ccoeff
 end

@@ -161,8 +161,8 @@ end
 """ 
     compute_bounding_box(gquad::GlobalQuadrature)
 
-Returns the bounding box `[low_corner, high_corner]` and the 
-bounding box center of the quadrature nodes in `gquad`.
+Returns the bounding box `[low_corner, high_corner]`, its center and radius,
+for the quadrature nodes in `gquad`.
 """
 function compute_bounding_box(gquad::GlobalQuadrature)
     low_corner = first(gquad.nodes)
@@ -173,5 +173,6 @@ function compute_bounding_box(gquad::GlobalQuadrature)
     end
     bbox = SVector(low_corner, high_corner)
     center = (low_corner + high_corner) / 2
-    return bbox, center
+    radius = norm(low_corner - high_corner) / 2
+    return bbox, center, radius
 end
