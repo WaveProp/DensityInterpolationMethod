@@ -37,7 +37,7 @@ function construct_density_interpolant(dimdata::DimData, element_index)
     # Direct solver (for the moment...)
     _apply_scaling_to_rhs!(Bvector, α, β)
     Ccoeff = Mmatrix \ Bvector
-    save_densitycoeff!(dimdata, Ccoeff, element_index)
+    save_dimcoeff!(dimdata, element_index, Ccoeff)
 end
 function _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index) 
     rhs = jacobian * ϕcoeff   # ϕ₁τ₁ + ϕ₂τ₂, where τ₁,τ₂ are the tangential vectors

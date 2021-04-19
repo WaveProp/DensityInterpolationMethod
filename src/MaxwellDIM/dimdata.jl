@@ -75,11 +75,41 @@ function getparameters(dimdata::DimData)
 end
 
 """
-    save_densitycoeff!(dimdata::DimData, ccoeff, element_index)
+    get_dimcoeff!(dimdata::DimData, element_index)
+
+Returns the density interpolant coefficients `cⱼ` for element `eⱼ`,
+with `j = element_index`. The coefficients is reshaped into a list
+of complex 3D vectors for each source point.
+"""
+function get_dimcoeff(dimdata::DimData, element_index)
+    ccoeff = dimdata.ccoeff[element_index]
+    return reinterpret(SVector{DIMENSION3, ComplexF64}, ccoeff)
+end
+
+"""
+    save_dimcoeff!(dimdata::DimData, element_index, ccoeff)
 
 Saves the density interpolant coefficients `cⱼ` for element `eⱼ`,
 with `j = element_index`.
 """
-function save_densitycoeff!(dimdata::DimData, ccoeff, element_index)
+function save_dimcoeff!(dimdata::DimData, element_index, ccoeff)
     dimdata.ccoeff[element_index] = ccoeff
+end
+
+"""
+    evaluate_γ₀dim(dimdata::DimData, element_index, r)
+
+Evaluates `γ₀Φₘ(yⱼ)`, where `Φₘ` is the density interpolant
+of element `eₘ` with `m = element_index` and `yⱼ` is a quadrature 
+node with `j = qnode_index`.
+"""
+function evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index)
+    k = dimdata.k       # wavenumber
+    qnode = dimdata.gquad.nodes[qnode_index]
+    qnormal = dimdata.gquad.normals[qnode_index]
+    # Density interpolant coefficients
+    ccoeff = get_dimcoeff(dimdata, element_index)   
+    return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
+        single_layer_kernel_eval(qnode, z, k, qnormal, c)  
+    end
 end
