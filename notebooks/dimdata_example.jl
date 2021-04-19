@@ -14,12 +14,13 @@ mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER);
 # Generates a DimData
 # with a quadrature of order QUADRATURE_ORDER
 QUADRATURE_ORDER = 2
-k = 1       # Wavenumber
-n_src = 14  # number of Lebedev sources
+k = 3      # Wavenumber
+n_src = 50  # number of Lebedev sources
 α = 2       # DIM α parameter
 β = 3       # DIM β parameter
+r_factor = 5  # radius factor for Lebedev sources
 dimdata = generate_dimdata(mesh, qorder=QUADRATURE_ORDER, k=k,
-                           n_src=n_src, α=α, β=β)
+                           n_src=n_src, α=α, β=β, r=r_factor)
 
 # Set the surface density `ϕ` equal to `τ₁`, 
 # where `τ₁` is the (first) tangent vector
@@ -37,19 +38,26 @@ ccoeff = DensityInterpolationMethod.MaxwellDIM.get_dimcoeff(dimdata, element_ind
 # Compare density with density interpolant
 # at qnodes in element
 qnode_indices_in_element = dimdata.gquad.el2indices[element_index]
-ϕlist = []  # density
-Φlist = []  # density interpolant
-α = dimdata.α
+ϕlist = []     # α * density
+nϕlist = []    # β * n × density
+γ₀Φlist = []   # γ₀(density interpolant)
+γ₁Φlist = []   # γ₁(density interpolant)
 for qnode_index in qnode_indices_in_element
     jac = dimdata.gquad.jacobians[qnode_index]
-    ϕ = α * jac * ϕcoeff
-    push!(ϕlist, ϕ)
+    normal = dimdata.gquad.normals[qnode_index]
+    ϕ =  jac * ϕcoeff
+    push!(ϕlist, dimdata.α * ϕ)
+    push!(nϕlist, dimdata.β * cross(normal, ϕ))
 
-    Φ = DensityInterpolationMethod.MaxwellDIM.
+    γ₀Φ = DensityInterpolationMethod.MaxwellDIM. 
             evaluate_γ₀dim(dimdata, element_index, qnode_index)
-    push!(Φlist, Φ)
+    γ₁Φ = DensityInterpolationMethod.MaxwellDIM. 
+            evaluate_γ₁dim(dimdata, element_index, qnode_index)
+    push!(γ₀Φlist, γ₀Φ)
+    push!(γ₁Φlist, γ₁Φ)
 end
-error = maximum(norm.(ϕlist - Φlist)) / maximum(norm.(ϕlist))
+error0 = maximum(norm.(ϕlist - γ₀Φlist)) / maximum(norm.(ϕlist))
+error1 = maximum(norm.(nϕlist - γ₁Φlist)) / maximum(norm.(ϕlist))
 
 
 

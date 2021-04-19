@@ -20,7 +20,7 @@ Integrates the flux of a function `f` using the quadrature data of GlobalQuadrat
 """
 function integrateflux(gquad::GlobalQuadrature, f)
     return sum(zip(gquad.nodes, gquad.weigths, gquad.normals)) do (xᵢ,wᵢ,nᵢ)
-        dot(f(xᵢ), nᵢ) * wᵢ
+        dot(nᵢ, f(xᵢ)) * wᵢ
     end
 end
 

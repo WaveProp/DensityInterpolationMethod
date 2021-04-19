@@ -97,7 +97,7 @@ function save_dimcoeff!(dimdata::DimData, element_index, ccoeff)
 end
 
 """
-    evaluate_γ₀dim(dimdata::DimData, element_index, r)
+    evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index)
 
 Evaluates `γ₀Φₘ(yⱼ)`, where `Φₘ` is the density interpolant
 of element `eₘ` with `m = element_index` and `yⱼ` is a quadrature 
@@ -110,6 +110,24 @@ function evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index)
     # Density interpolant coefficients
     ccoeff = get_dimcoeff(dimdata, element_index)   
     return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
-        single_layer_kernel_eval(qnode, z, k, qnormal, c)  
+        single_layer_kernel_eval(qnode, z, k, qnormal, c)
+    end
+end
+
+"""
+    evaluate_γ₁dim(dimdata::DimData, element_index, qnode_index)
+
+Evaluates `γ₁Φₘ(yⱼ)`, where `Φₘ` is the density interpolant
+of element `eₘ` with `m = element_index` and `yⱼ` is a quadrature 
+node with `j = qnode_index`.
+"""
+function evaluate_γ₁dim(dimdata::DimData, element_index, qnode_index)
+    k = dimdata.k       # wavenumber
+    qnode = dimdata.gquad.nodes[qnode_index]
+    qnormal = dimdata.gquad.normals[qnode_index]
+    # Density interpolant coefficients
+    ccoeff = get_dimcoeff(dimdata, element_index)   
+    return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
+        double_layer_kernel_eval(qnode, z, k, qnormal, c)
     end
 end

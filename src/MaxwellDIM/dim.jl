@@ -37,6 +37,8 @@ function construct_density_interpolant(dimdata::DimData, element_index)
     # Direct solver (for the moment...)
     _apply_scaling_to_rhs!(Bvector, α, β)
     Ccoeff = Mmatrix \ Bvector
+    println("size $(size(Mmatrix)), rank $(rank(Mmatrix))")
+    println("norm $(norm(Mmatrix * Ccoeff - Bvector))")
     save_dimcoeff!(dimdata, element_index, Ccoeff)
 end
 function _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index) 

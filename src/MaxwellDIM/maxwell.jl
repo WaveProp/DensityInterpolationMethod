@@ -66,7 +66,7 @@ function single_layer_kernel_eval(x, y, k, nx, ϕy)
     g = helmholtz_green_function(r, k)
 
     result = (1 + im/kr - 1/kr2)*ϕy
-    result += (-1 - 3im/kr + 3/kr2)*dot(ϕy, rhat)*rhat
+    result += (-1 - 3im/kr + 3/kr2)*dot(rhat, ϕy)*rhat
     result *= g
     return cross(nx, result)
 end

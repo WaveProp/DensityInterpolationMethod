@@ -73,7 +73,7 @@ function integrate(f,x,w)
 end
 function integrate(f,x,w,n)
     return sum(zip(x, w, n)) do (xᵢ, wᵢ, nᵢ)
-        dot(f(xᵢ), nᵢ) * wᵢ
+        dot(nᵢ, f(xᵢ)) * wᵢ
     end
 end
 
@@ -81,7 +81,7 @@ end
     integrateflux(f, q::AbstractQuadratureRule, el)
 
 Integrates the flux of the function `f` (ℜ³ ⟶ ℜ³) using the quadrature rule `q` 
-on the element `el`. This is simply `sum(dot(f(xᵢ), n(xᵢ)) .* wᵢ)`, where `x` and 
+on the element `el`. This is simply `sum(dot(n(xᵢ), f(xᵢ)) .* wᵢ)`, where `x` and 
 `w` are the quadrature nodes and weights, respectively, and `n` is the unit normal.
 """
 function integrateflux(f, q::AbstractQuadratureRule, el)
