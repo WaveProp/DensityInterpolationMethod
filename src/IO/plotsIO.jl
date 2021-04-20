@@ -144,6 +144,12 @@ end
     return x, y, z
 end
 
+@recipe function f(pts::AbstractVector{Point2D}) 
+    x = [p[1] for p in pts]
+    y = [p[2] for p in pts]
+    return x, y
+end
+
 @recipe function f(el::FlatTriangleElement)
     n = get_lnodes(el)
     # Reorder nodes for visualization purposes

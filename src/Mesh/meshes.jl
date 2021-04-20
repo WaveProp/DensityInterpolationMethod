@@ -38,6 +38,29 @@ function getelements(mesh::GenericMesh)
 end
 
 """
+    getelement(mesh::GenericMesh, element_index)
+
+Returns the `element_index`th element of the mesh.
+CAUTION, this assumes that the order of the elements 
+have not changed.
+"""
+function getelement(mesh::GenericMesh, element_index)
+    @assert 1 ≤ element_index ≤ get_number_of_elements(mesh)
+    # A better way of doing this?
+    elementiterator = getelements(mesh)
+    index = 1
+    element = nothing
+    for e in elementiterator
+        element = e
+        if index == element_index
+            break
+        end
+        index += 1
+    end
+    return element
+end
+
+"""
     get_number_of_elements(mesh::GenericMesh)
 
 Returns the total number of elements in the mesh.

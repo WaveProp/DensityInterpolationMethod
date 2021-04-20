@@ -38,6 +38,7 @@ export
     getelementdata,
     getorder,
     getelements,
+    getelement,
     get_number_of_elements,
     get_etypes_and_elements
 
