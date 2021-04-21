@@ -16,8 +16,8 @@ end
 """
     cross_product_matrix(v) 
 
-Returns the matrix `Aᵥ` associated with `fᵥ(ϕ) := v × ϕ`
-so that `fᵥ(ϕ) = Aᵥϕ`.
+Returns the matrix `Aᵥ` associated with the 
+cross product `v × ϕ` so that `v × ϕ = Aᵥϕ`.
 """
 function cross_product_matrix(v)
     return transpose(SMatrix{3,3,Float64,9}(      0, -v[3],  v[2],
@@ -34,8 +34,7 @@ function single_layer_kernel(x, y, k, nx)
     g = helmholtz_green_function(r, k)
     gp  = im*k*g - g/r
     gpp = im*k*gp - gp/r + g/r^2
-    ID    = SMatrix{3,3,Float64,9}(1,0,0,0,1,0,0,0,1)
-    RRT   = rvec*transpose(rvec) # rvec ⊗ rvecᵗ
+    RRT = rvec*transpose(rvec) # rvec ⊗ rvecᵗ
     G = g*I + 1/k^2*(gp/r*I + (gpp/r^2 - gp/r^3)*RRT)
     ncross = cross_product_matrix(nx)
     return  ncross * G

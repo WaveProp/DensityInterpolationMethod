@@ -29,6 +29,11 @@ struct DimData
     # Each entry `cⱼ` is the vector of coefficients of `Φ` at `eⱼ`.
     ccoeff::Vector{Vector{ComplexF64}}
 
+    # LQ matrices for constructing the density interpolant `Φ`,
+    # for each element.
+    Lmatrices::Vector{LowerTriangular{ComplexF64, Matrix{ComplexF64}}}
+    Qmatrices::Vector{Matrix{ComplexF64}}
+
     # List of source points for constructing the
     # density interpolant `Φ`.
     src_list::Vector{Point3D}
@@ -54,14 +59,17 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     n_elements = get_number_of_elements(gquad)
     
     ϕcoeff = zeros(SVector{2, ComplexF64}, n_qnodes)
-    n_ccoef = DIMENSION3 * n_qnodes   # density interpolation coeffs: 3 per qnode
+    n_ccoef = DIMENSION3 * n_src   # density interpolation coeffs: 3 per src point
     ccoeff = [zeros(ComplexF64, n_ccoef) for _ in 1:n_elements]
+    Lmatrices = [LowerTriangular(Matrix{ComplexF64}(undef, 0, 0)) for _ in 1:n_elements]
+    Qmatrices = [Matrix{ComplexF64}(undef, 0, 0) for _ in 1:n_elements]
 
     # compute source points
     bbox, bbox_center, bbox_radius = compute_bounding_box(gquad)
     src_radius = r * bbox_radius
     src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
-    return DimData(mesh, gquad, k, α, β, ϕcoeff, ccoeff, src_list)
+    return DimData(mesh, gquad, k, α, β, ϕcoeff, ccoeff, 
+                   Lmatrices, Qmatrices, src_list)
 end
 
 """
