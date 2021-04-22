@@ -7,24 +7,25 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
     # Get data
     k, _, _ = getparameters(dimdata)
     src_list = dimdata.src_list
-    qnode_list, normal_list, _ = get_nodedata_from_element(dimdata.gquad, 
-                                                           element_index)
+    qnode_list, normal_list, jac_list = get_nodedata_from_element(dimdata.gquad, 
+                                                                  element_index)
     n_qnodes = length(qnode_list)    # number of qnodes
     n_src = length(src_list)         # number of src points
 
     # Initialize matrix
-    # 6 equations per qnode
+    # 4 equations per qnode
     # 3 unknowns per src point
-    Mmatrix = zeros(ComplexF64, 6*n_qnodes, 3*n_src)
+    Mmatrix = zeros(ComplexF64, 4*n_qnodes, 3*n_src)
 
     # Assemble system
     for r_index in 1:n_qnodes
         qnode = qnode_list[r_index]         # quadrature node
         normal = normal_list[r_index]       # normal at qnode
+        jacobian = jac_list[r_index]        # jacobian at qnode
         for l_index in 1:n_src
             src = src_list[l_index]       # src point
-            _assemble_submatrix!(Mmatrix, qnode, normal, src, k, 
-                              n_qnodes, r_index, l_index) 
+            _assemble_submatrix!(Mmatrix, qnode, normal, jacobian, 
+                                 src, k, n_qnodes, r_index, l_index) 
         end
     end
 
@@ -34,24 +35,26 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
     dimdata.Qmatrices[element_index] = Matrix(lqobject.Q)
     return copy(Mmatrix)
 end
-function _assemble_submatrix!(Mmatrix, qnode, normal, src, k, 
+function _assemble_submatrix!(Mmatrix, qnode, normal, jacobian, src, k, 
                               n_qnodes, r_index, l_index) 
-    # γ₀G
-    M0submatrix = single_layer_kernel(qnode, src, k, normal)  
-    # -n x γ₁G
-    M1submatrix = -cross_product_matrix(normal) * 
+    # Jᵗγ₀G, size=2×3
+    M0submatrix = transpose(jacobian) *
+                  single_layer_kernel(qnode, src, k, normal)  
+    # Jᵗ(-n x γ₁G), size=2×3
+    M1submatrix = -transpose(jacobian) *
+                  cross_product_matrix(normal) * 
                   double_layer_kernel(qnode, src, k, normal)  
 
     # Initial indices (i, j)
-    initial_i0 = 3*r_index - 2              # for M0
-    initial_i1 = initial_i0 + 3*n_qnodes    # for M1
+    initial_i0 = 2*r_index - 1              # for M0
+    initial_i1 = initial_i0 + 2*n_qnodes    # for M1
     initial_j = 3*l_index - 2               # for both M0 and M1
 
     index_j = initial_j
     for j in 1:3
         index_i0 = initial_i0
         index_i1 = initial_i1
-        for i in 1:3
+        for i in 1:2
             Mmatrix[index_i0, index_j] = M0submatrix[i, j]
             Mmatrix[index_i1, index_j] = M1submatrix[i, j]
             index_i0 += 1
@@ -69,8 +72,8 @@ function compute_density_interpolant(dimdata::DimData, element_index)
     n_qnodes = length(qnode_list)    # number of qnodes
 
     # Initialize RHS vector
-    # 6 equations per qnode
-    Bvector = zeros(ComplexF64, 6*n_qnodes)
+    # 4 equations per qnode
+    Bvector = zeros(ComplexF64, 4*n_qnodes)
 
     # Assemble RHS
     for r_index in 1:n_qnodes
@@ -86,9 +89,11 @@ function compute_density_interpolant(dimdata::DimData, element_index)
     return copy(Bvector)
 end
 function _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index) 
-    rhs = jacobian * ϕcoeff   # ϕ₁τ₁ + ϕ₂τ₂, where τ₁,τ₂ are the tangential vectors
-    index = 3*r_index - 2
-    for i in 1:3
+    # RHS = [τ₁ τ₂]ᵗ(ϕ₁τ₁ + ϕ₂τ₂), size=2×1,
+    # where J = [τ₁ τ₂] is the jacobian
+    rhs = transpose(jacobian) * jacobian * ϕcoeff   
+    index = 2*r_index - 1
+    for i in 1:2
         Bvector[index] = rhs[i]
         index += 1
     end
