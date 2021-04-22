@@ -16,12 +16,12 @@ mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER);
 # with a quadrature of order QUADRATURE_ORDER
 QUADRATURE_ORDER = 4
 k = 3      # Wavenumber
-n_src = 26  # number of Lebedev sources
+n_src = 14  # number of Lebedev sources
 α = 2       # DIM α parameter
 β = 3       # DIM β parameter
 r_factor = 5  # radius factor for Lebedev sources
 dimdata = generate_dimdata(mesh, qorder=QUADRATURE_ORDER, k=k,
-                           n_src=n_src, α=α, β=β, r=r_factor)
+                           n_src=n_src, α=α, β=β, r=r_factor);
 
 # Set the surface density `ϕ` equal to `τ₁`, 
 # where `τ₁` is the (first) tangent vector
@@ -32,8 +32,8 @@ end
 
 # Compute density interpolant coefficients for element 1
 element_index = 1
-DensityInterpolationMethod.MaxwellDIM.
-    construct_density_interpolant(dimdata, element_index)
+DensityInterpolationMethod.MaxwellDIM.assemble_dim_matrices(dimdata, element_index)
+DensityInterpolationMethod.MaxwellDIM.compute_density_interpolant(dimdata, element_index)
 
 # Reference triangle sampling
 """
@@ -62,7 +62,7 @@ end
 
 # TEST: compare density with density interpolant
 # at element nodes
-n_nodes = 1000
+n_nodes = 5000
 nodelist = sample_reference_triangle(n_nodes)
 ϕlist = []     # α * density
 nϕlist = []    # β * n × density
@@ -87,11 +87,6 @@ error0list = norm.(ϕlist - γ₀Φlist) ./ maximum(norm.(ϕlist))
 error0 = maximum(error0list) 
 error1list = norm.(nϕlist - γ₁Φlist) ./ maximum(norm.(nϕlist))
 error1 = maximum(error1list)
-println("error0 $error0, error1 $error1")
+println("error_γ₀ $error0, error_γ₁ $error1")
 
-# Plot
-#using Plots; plotlyjs()
-#x = [p[1] for p in nodelist]
-#y = [p[2] for p in nodelist]
-#scatter(x, y)
-#contourf(x, y, error0list)
+

@@ -3,6 +3,13 @@ Methods for solving Maxwell's equations using
 Density Interpolation Method.
 """
 
+"""
+    assemble_dim_matrices(dimdata::DimData)
+    assemble_dim_matrices(dimdata::DimData, element_index)
+
+Assembles the matrix for computing the Density Interpolant and
+stores in `dimdata` its LQ decomposition, for each element in `dimdata`
+"""
 function assemble_dim_matrices(dimdata::DimData, element_index)
     # Get data
     k, _, _ = getparameters(dimdata)
@@ -30,10 +37,9 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
     end
 
     # Compute LQ and save matrices
-    lqobject = lq(Mmatrix)  # lq!(Mmatrix)
+    lqobject = lq!(Mmatrix)
     dimdata.Lmatrices[element_index] = LowerTriangular(lqobject.L)
     dimdata.Qmatrices[element_index] = Matrix(lqobject.Q)
-    return copy(Mmatrix)
 end
 function _assemble_submatrix!(Mmatrix, qnode, normal, jacobian, src, k, 
                               n_qnodes, r_index, l_index) 
@@ -64,6 +70,14 @@ function _assemble_submatrix!(Mmatrix, qnode, normal, jacobian, src, k,
     end
 end
 
+"""
+    compute_density_interpolant(dimdata::DimData)
+    compute_density_interpolant(dimdata::DimData, element_index)
+
+Computes the Density Interpolant coefficients, for each element
+in `dimdata`. This assumes that [`assemble_dim_matrices`](@ref) has already
+been called.
+"""
 function compute_density_interpolant(dimdata::DimData, element_index)
     # Get data
     _, α, β = getparameters(dimdata)
@@ -86,7 +100,6 @@ function compute_density_interpolant(dimdata::DimData, element_index)
     # Solve system using LQ decomposition
     # and save solution
     _solve_dim_lq!(dimdata, Bvector, element_index)
-    return copy(Bvector)
 end
 function _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index) 
     # RHS = [τ₁ τ₂]ᵗ(ϕ₁τ₁ + ϕ₂τ₂), size=2×1,
@@ -115,47 +128,6 @@ end
         adjoint(dimdata.Qmatrices[element_index]) * 
         (dimdata.Lmatrices[element_index] \ Bvector)
 end
-
-# In construction...
-function construct_density_interpolant(dimdata::DimData, element_index)
-    # Get data
-    k, α, β = getparameters(dimdata)
-    src_list = dimdata.src_list
-    qnode_list, normal_list, jac_list = get_nodedata_from_element(dimdata.gquad, 
-                                                                  element_index)
-    n_qnodes = length(qnode_list)    # number of qnodes
-    n_src = length(src_list)         # number of src points
-
-    # Initialize matrices
-    # 6 equations per qnode
-    # 3 unknowns per src point
-    Mmatrix = zeros(ComplexF64, 6*n_qnodes, 3*n_src)
-    Bvector = zeros(ComplexF64, 6*n_qnodes)
-
-    # Assemble system
-    for r_index in 1:n_qnodes
-        qnode = qnode_list[r_index]         # quadrature node
-        normal = normal_list[r_index]       # normal at qnode
-        jacobian = jac_list[r_index]        # jacobian at qnode
-        ϕcoeff = dimdata.ϕcoeff[r_index]    # density coefficients at qnode
-        _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index)
-        for l_index in 1:n_src
-            src = src_list[l_index]       # src point
-            _assemble_submatrix!(Mmatrix, qnode, normal, src, k, 
-                              n_qnodes, r_index, l_index) 
-        end
-    end
-
-    # Solve system
-    # Direct solver (for the moment...)
-    _apply_scaling_to_rhs!(Bvector, α, β)
-    Ccoeff = Mmatrix \ Bvector
-    println("size $(size(Mmatrix)), rank $(rank(Mmatrix))")
-    println("norm $(norm(Mmatrix * Ccoeff - Bvector))")
-    save_dimcoeff!(dimdata, element_index, Ccoeff)
-    return copy(Mmatrix), copy(Bvector)
-end
-
 
 
 
