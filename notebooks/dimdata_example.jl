@@ -14,7 +14,7 @@ mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER);
 
 # Generates a DimData
 # with a quadrature of order QUADRATURE_ORDER
-QUADRATURE_ORDER = 4
+QUADRATURE_ORDER = 2
 k = 3      # Wavenumber
 n_src = 14  # number of Lebedev sources
 α = 2       # DIM α parameter
@@ -30,10 +30,9 @@ for i in eachindex(dimdata.ϕcoeff)
     dimdata.ϕcoeff[i] = ϕcoeff
 end
 
-# Compute density interpolant coefficients for element 1
-element_index = 1
-DensityInterpolationMethod.MaxwellDIM.assemble_dim_matrices(dimdata, element_index)
-DensityInterpolationMethod.MaxwellDIM.compute_density_interpolant(dimdata, element_index)
+# Compute density interpolant coefficients for all elements
+DensityInterpolationMethod.MaxwellDIM.assemble_dim_matrices(dimdata)
+DensityInterpolationMethod.MaxwellDIM.compute_density_interpolant(dimdata)
 
 # Reference triangle sampling
 """
@@ -62,6 +61,7 @@ end
 
 # TEST: compare density with density interpolant
 # at element nodes
+element_index = 1
 n_nodes = 5000
 nodelist = sample_reference_triangle(n_nodes)
 ϕlist = []     # α * density

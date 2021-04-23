@@ -5,11 +5,17 @@ Density Interpolation Method.
 
 """
     assemble_dim_matrices(dimdata::DimData)
-    assemble_dim_matrices(dimdata::DimData, element_index)
+    assemble_dim_matrices(dimdata::DimData, element_index::Integer)
 
 Assembles the matrix for computing the Density Interpolant and
-stores in `dimdata` its LQ decomposition, for each element in `dimdata`
+stores its LQ decomposition in `dimdata`, for each element in `dimdata`.
 """
+function assemble_dim_matrices(dimdata::DimData)
+    # Compute DIM matrices for each element
+    for i in eachindex(dimdata.gquad.el2indices)  # list of elements
+        assemble_dim_matrices(dimdata, i)
+    end
+end
 function assemble_dim_matrices(dimdata::DimData, element_index)
     # Get data
     k, _, _ = getparameters(dimdata)
@@ -22,7 +28,7 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
     # Initialize matrix
     # 4 equations per qnode
     # 3 unknowns per src point
-    Mmatrix = zeros(ComplexF64, 4*n_qnodes, 3*n_src)
+    Mmatrix = Matrix{ComplexF64}(undef, 4*n_qnodes, 3*n_src) 
 
     # Assemble system
     for r_index in 1:n_qnodes
@@ -78,16 +84,23 @@ Computes the Density Interpolant coefficients, for each element
 in `dimdata`. This assumes that [`assemble_dim_matrices`](@ref) has already
 been called.
 """
+function compute_density_interpolant(dimdata::DimData)
+    # Compute DIM matrices for each element
+    for i in eachindex(dimdata.gquad.el2indices)  # list of elements
+        compute_density_interpolant(dimdata, i)
+    end
+end
 function compute_density_interpolant(dimdata::DimData, element_index)
+    # Bvector: pre-allocated RHS vector
     # Get data
     _, α, β = getparameters(dimdata)
     qnode_list, _, jac_list = get_nodedata_from_element(dimdata.gquad, 
-                                               element_index)
-    n_qnodes = length(qnode_list)    # number of qnodes
+                                                        element_index)
+    n_qnodes = length(qnode_list)  # number of qnodes in element
 
     # Initialize RHS vector
     # 4 equations per qnode
-    Bvector = zeros(ComplexF64, 4*n_qnodes)
+    Bvector = Vector{ComplexF64}(undef, 4*n_qnodes)
 
     # Assemble RHS
     for r_index in 1:n_qnodes
@@ -112,7 +125,7 @@ function _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index)
     end
 end
 function _apply_scaling_to_rhs!(Bvector, α, β)
-    # Transform a vector [b₁, ..., bₙ, 0, ..., 0]ᵗ
+    # Transform a vector [b₁, ..., bₙ, x, ..., x]ᵗ
     # into [α*b₁, ..., α*bₙ, β*b₁, ..., β*bₙ]ᵗ
     @assert iseven(length(Bvector))
     n = length(Bvector) ÷ 2
@@ -121,12 +134,14 @@ function _apply_scaling_to_rhs!(Bvector, α, β)
         Bvector[i] = α*Bvector[i]
     end
 end
-@inline function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
+function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
     # Solves the density interpolant system
     # using LQ decomposition and saves result
-    dimdata.ccoeff[element_index] .= 
-        adjoint(dimdata.Qmatrices[element_index]) * 
-        (dimdata.Lmatrices[element_index] \ Bvector)
+    ldiv!(dimdata.Lmatrices[element_index], 
+          Bvector)    # Solves Ly=b, store result in b
+    mul!(dimdata.ccoeff[element_index], 
+         adjoint(dimdata.Qmatrices[element_index]), 
+         Bvector)     # ccoef = adjoint(Q)*y
 end
 
 

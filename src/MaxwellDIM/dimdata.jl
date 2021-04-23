@@ -58,9 +58,9 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     n_qnodes = get_number_of_qnodes(gquad)
     n_elements = get_number_of_elements(gquad)
     
-    ϕcoeff = zeros(SVector{2, ComplexF64}, n_qnodes)
+    ϕcoeff = Vector{SVector{2, ComplexF64}}(undef, n_qnodes)
     n_ccoef = DIMENSION3 * n_src   # density interpolation coeffs: 3 per src point
-    ccoeff = [zeros(ComplexF64, n_ccoef) for _ in 1:n_elements]
+    ccoeff = [Vector{ComplexF64}(undef, n_ccoef) for _ in 1:n_elements]
     Lmatrices = [LowerTriangular(Matrix{ComplexF64}(undef, 0, 0)) for _ in 1:n_elements]
     Qmatrices = [Matrix{ComplexF64}(undef, 0, 0) for _ in 1:n_elements]
 
@@ -83,7 +83,7 @@ function getparameters(dimdata::DimData)
 end
 
 """
-    get_dimcoeff!(dimdata::DimData, element_index)
+    get_dimcoeff(dimdata::DimData, element_index)
 
 Returns the density interpolant coefficients `cⱼ` for element `eⱼ`,
 with `j = element_index`. The coefficients is reshaped into a list
@@ -92,16 +92,6 @@ of complex 3D vectors for each source point.
 function get_dimcoeff(dimdata::DimData, element_index)
     ccoeff = dimdata.ccoeff[element_index]
     return reinterpret(SVector{DIMENSION3, ComplexF64}, ccoeff)
-end
-
-"""
-    save_dimcoeff!(dimdata::DimData, element_index, ccoeff)
-
-Saves the density interpolant coefficients `cⱼ` for element `eⱼ`,
-with `j = element_index`.
-"""
-function save_dimcoeff!(dimdata::DimData, element_index, ccoeff)
-    dimdata.ccoeff[element_index] = ccoeff
 end
 
 """
