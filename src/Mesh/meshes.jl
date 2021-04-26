@@ -78,3 +78,31 @@ function get_number_of_lnodes(mesh::GenericMesh)
     return sum(get_number_of_lnodes(el) for el in getelements(mesh))
 end
 
+"""
+    compute_hmax(mesh::GenericMesh)
+
+Returns the maximum element size `hmax` in `mesh`.
+"""
+function compute_hmax(mesh::GenericMesh)
+    hmax = 0.0
+    for element in getelements(mesh)
+        hmax = max(hmax, _compute_hmax_element(element))
+    end
+    return hmax
+end
+function _compute_hmax_element(element)
+    domain = getdomain(element)
+    vertices = getvertices(domain)
+    n_vertices = length(vertices)
+    hmax = 0.0
+    for i in 1:n_vertices
+        v1 = element(vertices[i])
+        for j in i+1:n_vertices
+            v2 = element(vertices[j])
+            hmax = max(hmax, norm(v1-v2))
+        end
+    end
+    return hmax
+end
+
+

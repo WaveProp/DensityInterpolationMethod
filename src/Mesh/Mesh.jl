@@ -40,7 +40,8 @@ export
     getelements,
     getelement,
     get_number_of_elements,
-    get_etypes_and_elements
+    get_etypes_and_elements,
+    compute_hmax
 
 include("lagrangepoly.jl")
 include("referenceshapes.jl")

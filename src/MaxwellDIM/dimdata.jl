@@ -11,6 +11,7 @@ for the Density Interpolation Method.
 """
 struct DimData
     # Mesh and quadrature data
+    hmax::Float64                  # Maximum element size
     mesh::GenericMesh              # Contains the elements parametrization
     gquad::GlobalQuadrature        # Contains quadrature data
 
@@ -54,6 +55,7 @@ Generates a `DimData` structure from `mesh::GenericMesh`.
 - `r=5`: radius factor of density interpolant source points sphere.
 """
 function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14, r=5)
+    hmax = compute_hmax(mesh)
     gquad = generate_globalquadrature(mesh, order=qorder)
     n_qnodes = get_number_of_qnodes(gquad)
     n_elements = get_number_of_elements(gquad)
@@ -68,7 +70,7 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     bbox, bbox_center, bbox_radius = compute_bounding_box(gquad)
     src_radius = r * bbox_radius
     src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
-    return DimData(mesh, gquad, k, α, β, ϕcoeff, ccoeff, 
+    return DimData(hmax, mesh, gquad, k, α, β, ϕcoeff, ccoeff, 
                    Lmatrices, Qmatrices, src_list)
 end
 
