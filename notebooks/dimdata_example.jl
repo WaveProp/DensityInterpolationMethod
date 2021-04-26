@@ -1,5 +1,7 @@
 using StaticArrays
+using Random
 using LinearAlgebra
+using BenchmarkTools
 using DensityInterpolationMethod
 using DensityInterpolationMethod.IO
 using DensityInterpolationMethod.Mesh
@@ -8,14 +10,14 @@ using DensityInterpolationMethod.MaxwellDIM
 
 # Load a mesh with quadratic elements
 ELEM_ORDER = 2
-HMAX = 0.5
+HMAX = 0.1
 mesh_filename = "test/meshes/sphere1.geo"
 mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER);
-
+##
 # Generates a DimData
 # with a quadrature of order QUADRATURE_ORDER
 QUADRATURE_ORDER = 2
-k = 3      # Wavenumber
+k = 1     # Wavenumber
 n_src = 14  # number of Lebedev sources
 α = 2       # DIM α parameter
 β = 3       # DIM β parameter
@@ -31,57 +33,58 @@ for i in eachindex(dimdata.ϕcoeff)
 end
 
 # Compute density interpolant coefficients for all elements
+println("Computing DIM matrices...")
 DensityInterpolationMethod.MaxwellDIM.assemble_dim_matrices(dimdata)
+println("Done")
+println("Computing density interpolant...")
 DensityInterpolationMethod.MaxwellDIM.compute_density_interpolant(dimdata)
+println("Done")
 
 # Reference triangle sampling
-"""
-    sample_reference_triangle(n_samples)
-
-Returns `n_samples` uniformly sampled points in the reference triangle.
-https://stackoverflow.com/questions/4778147/sample-random-point-in-triangle
-"""
 function sample_reference_triangle(n_samples)
-    A = SVector(0, 0)
-    B = SVector(1, 0)
-    C = SVector(0, 1)
-    r1 = rand(n_samples)
-    r2 = rand(n_samples)
-    samples = zeros(SVector{2, Float64}, n_samples)
-    samples_matrix = reshape(reinterpret(Float64, samples), 2, n_samples)
-    for j in 1:n_samples
-        for i in 1:2
-            samples_matrix[i, j] = (1 - sqrt(r1[j])) * A[i] + 
-                                   (sqrt(r1[j]) * (1 - r2[j])) * B[i] + 
-                                   (sqrt(r1[j]) * r2[j]) * C[i]
+    sample_per_axis = ceil(Int64, sqrt(2*n_samples))+2
+    iter = range(0, 1, length=sample_per_axis)
+    iter = iter[2:end]  # remove endpoints
+    samples = SVector{2, Float64}[]
+    for x in iter
+        for y in iter
+            if y ≥ 1 - x 
+                continue
+            end
+            push!(samples, SVector(x, y))
         end
     end
     return samples
 end
 
+# Sample nodes
+n_nodes = 5000   # nodes in mesh
+n_nodes_per_element = n_nodes÷get_number_of_elements(mesh)+1
+Random.seed!(1);
+nodelist = sample_reference_triangle(n_nodes_per_element)
+
 # TEST: compare density with density interpolant
-# at element nodes
-element_index = 1
-n_nodes = 5000
-nodelist = sample_reference_triangle(n_nodes)
+# at mesh nodes
 ϕlist = []     # α * density
 nϕlist = []    # β * n × density
 γ₀Φlist = []   # γ₀(density interpolant)
 γ₁Φlist = []   # γ₁(density interpolant)
-element = getelement(dimdata.mesh, element_index)
-for node in nodelist
-    jac = getjacobian(element, node)
-    normal = getnormal(element, node)
-    ϕ =  jac * ϕcoeff
-    push!(ϕlist, dimdata.α * ϕ)
-    push!(nϕlist, dimdata.β * cross(normal, ϕ))
+for element_index in eachindex(dimdata.gquad.el2indices)
+    element = getelement(dimdata.mesh, element_index)
+    for node in nodelist
+        jac = getjacobian(element, node)
+        normal = getnormal(element, node)
+        ϕ =  jac * ϕcoeff
+        push!(ϕlist, dimdata.α * ϕ)
+        push!(nϕlist, dimdata.β * cross(normal, ϕ))
 
-    γ₀Φ = DensityInterpolationMethod.MaxwellDIM. 
-            evaluate_γ₀dim(dimdata, element_index, node)
-    γ₁Φ = DensityInterpolationMethod.MaxwellDIM. 
-            evaluate_γ₁dim(dimdata, element_index, node)
-    push!(γ₀Φlist, γ₀Φ)
-    push!(γ₁Φlist, γ₁Φ)
+        γ₀Φ = DensityInterpolationMethod.MaxwellDIM. 
+                evaluate_γ₀dim(dimdata, element_index, node)
+        γ₁Φ = DensityInterpolationMethod.MaxwellDIM. 
+                evaluate_γ₁dim(dimdata, element_index, node)
+        push!(γ₀Φlist, γ₀Φ)
+        push!(γ₁Φlist, γ₁Φ)
+    end
 end
 error0list = norm.(ϕlist - γ₀Φlist) ./ maximum(norm.(ϕlist))
 error0 = maximum(error0list) 
