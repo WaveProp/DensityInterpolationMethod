@@ -114,12 +114,21 @@ function get_number_of_elements(gquad::GlobalQuadrature)
 end
 
 """
-    get_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
+    get_qnode_indices(gquad::GlobalQuadrature)
 
-Returns the qnode indices that belong to the element `element_index`.
+Returns an `UnitRange` containing the indices of all qnodes.
 """
-function get_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
-    return gquad.el2indices[element_index]
+function get_qnode_indices(gquad::GlobalQuadrature)
+    return eachindex(gquad.nodes)
+end
+
+"""
+    get_element_indices(gquad::GlobalQuadrature)
+
+Returns an `UnitRange` containing the indices of all elements.
+"""
+function get_element_indices(gquad::GlobalQuadrature)
+    return eachindex(gquad.el2indices)
 end
 
 """

@@ -12,8 +12,8 @@ stores its LQ decomposition in `dimdata`, for each element in `dimdata`.
 """
 function assemble_dim_matrices(dimdata::DimData)
     # Compute DIM matrices for each element
-    for i in eachindex(dimdata.gquad.el2indices)  # list of elements
-        assemble_dim_matrices(dimdata, i)
+    for element_index in get_element_indices(dimdata.gquad) 
+        assemble_dim_matrices(dimdata, element_index)
     end
 end
 function assemble_dim_matrices(dimdata::DimData, element_index)
@@ -86,8 +86,8 @@ been called.
 """
 function compute_density_interpolant(dimdata::DimData)
     # Compute DIM matrices for each element
-    for i in eachindex(dimdata.gquad.el2indices)  # list of elements
-        compute_density_interpolant(dimdata, i)
+    for element_index in get_element_indices(dimdata.gquad) 
+        compute_density_interpolant(dimdata, element_index)
     end
 end
 function compute_density_interpolant(dimdata::DimData, element_index)
@@ -142,6 +142,15 @@ function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
     mul!(dimdata.ccoeff[element_index], 
          adjoint(dimdata.Qmatrices[element_index]), 
          Bvector)     # ccoef = adjoint(Q)*y
+end
+
+"""
+
+Computes the integral operator `C̃_{α,β}[ϕ]` at all quadrature points,
+using the density interpolation method.
+"""
+function compute_integral_operator(dimdata::DimData)
+    
 end
 
 

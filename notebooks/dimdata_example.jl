@@ -9,7 +9,7 @@ using DensityInterpolationMethod.MaxwellDIM
 
 # Load a mesh with quadratic elements
 ELEM_ORDER = 2
-HMAX = 0.05
+HMAX = 0.4
 mesh_filename = "test/meshes/sphere1.geo"
 mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER);
 ##
