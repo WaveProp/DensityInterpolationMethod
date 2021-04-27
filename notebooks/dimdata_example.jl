@@ -1,5 +1,4 @@
 using StaticArrays
-using Random
 using LinearAlgebra
 using BenchmarkTools
 using DensityInterpolationMethod
@@ -10,13 +9,13 @@ using DensityInterpolationMethod.MaxwellDIM
 
 # Load a mesh with quadratic elements
 ELEM_ORDER = 2
-HMAX = 0.3
+HMAX = 0.05
 mesh_filename = "test/meshes/sphere1.geo"
 mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER);
 ##
 # Generates a DimData
 # with a quadrature of order QUADRATURE_ORDER
-QUADRATURE_ORDER = 2
+QUADRATURE_ORDER = 4
 k = 1     # Wavenumber
 n_src = 14  # number of Lebedev sources
 α = 2       # DIM α parameter
@@ -58,9 +57,8 @@ function sample_reference_triangle(n_samples)
 end
 
 # Sample nodes
-n_nodes = 5000   # nodes in mesh
+n_nodes = 20000   # nodes in mesh
 n_nodes_per_element = n_nodes÷get_number_of_elements(mesh)+1
-Random.seed!(1);
 nodelist = sample_reference_triangle(n_nodes_per_element)
 
 # TEST: compare density with density interpolant
@@ -90,6 +88,8 @@ error0list = norm.(ϕlist - γ₀Φlist) ./ maximum(norm.(ϕlist))
 error0 = maximum(error0list) 
 error1list = norm.(nϕlist - γ₁Φlist) ./ maximum(norm.(nϕlist))
 error1 = maximum(error1list)
-println("error_γ₀ $error0, error_γ₁ $error1")
+println("hmax $(dimdata.hmax)")
+println("error_γ₀ $error0")
+println("error_γ₁ $error1")
 
 

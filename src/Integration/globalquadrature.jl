@@ -114,26 +114,42 @@ function get_number_of_elements(gquad::GlobalQuadrature)
 end
 
 """
-    get_inelement_qnode_indices(gquad::GlobalQuadrature, qnode_index::Integer)
+    get_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
 
-Given a `qnode_index`, returns the indices of the qnodes that lie on the same
-element.
+Returns the qnode indices that belong to the element `element_index`.
 """
-function get_inelement_qnode_indices(gquad::GlobalQuadrature, qnode_index::Integer)
-    element_index = gquad.index2element[qnode_index]
+function get_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
+    return gquad.el2indices[element_index]
+end
+
+"""
+    get_element_index(gquad::GlobalQuadrature, qnode_index::Integer)
+
+Returns the element index where `qnode_index` belongs.
+"""
+function get_element_index(gquad::GlobalQuadrature, qnode_index::Integer)
+    return gquad.index2element[qnode_index]
+end
+
+"""
+    get_inelement_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
+
+Returns the indices of the qnodes that lie on the element `element_index`.
+"""
+function get_inelement_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
     inelement_qnode_indices = gquad.el2indices[element_index]
     return inelement_qnode_indices
 end
 
 """
-    get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index::Integer)
+    get_outelement_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
 
-Given a `qnode_index`, returns an iterator with the indices of the qnodes 
-that do not lie on the same element. This assumes that the qnodes indices of
-an element are stored contiguously (not necessarily in order).
+Returns an iterator with the indices of the qnodes that do not lie 
+on the element `element_index`. This assumes that the qnodes of
+an element are stored (in `gquad.nodes`) contiguously (not necessarily in order).
 """
-function get_outelement_qnode_indices(gquad::GlobalQuadrature, qnode_index::Integer)
-    inelement_qnode_indices = get_inelement_qnode_indices(gquad, qnode_index)
+function get_outelement_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
+    inelement_qnode_indices = get_inelement_qnode_indices(gquad, element_index)
     min_index, max_index = extrema(inelement_qnode_indices)
     n_qnodes = get_number_of_qnodes(gquad)
     iterator = Iterators.flatten((1:min_index-1, 

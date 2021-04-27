@@ -97,6 +97,24 @@ function get_dimcoeff(dimdata::DimData, element_index)
 end
 
 """
+    get_number_of_qnodes(dimdata::DimData)
+
+Returns the total number of quadrature nodes in `dimdata`.
+"""
+function get_number_of_qnodes(dimdata::DimData)
+    return get_number_of_qnodes(dimdata.gquad)
+end
+
+"""
+    get_number_of_srcs(dimdata::DimData)
+
+Returns the total number of source points in `dimdata`.
+"""
+function get_number_of_srcs(dimdata::DimData)
+    return length(dimdata.src_list)
+end
+
+"""
     evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index::Integer)
 
 Evaluates `γ₀Φₘ(yⱼ)`, where `Φₘ` is the density interpolant

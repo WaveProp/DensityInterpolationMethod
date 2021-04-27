@@ -13,6 +13,7 @@ using StaticArrays
 using DensityInterpolationMethod.Mesh
 using DensityInterpolationMethod.Integration
 using DensityInterpolationMethod.Utils
+import DensityInterpolationMethod.Integration: get_number_of_qnodes
 
 export 
     # Abstract types
