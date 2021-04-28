@@ -15,7 +15,7 @@ mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER);
 ##
 # Generates a DimData
 # with a quadrature of order QUADRATURE_ORDER
-QUADRATURE_ORDER = 4
+QUADRATURE_ORDER = 2
 k = 1     # Wavenumber
 n_src = 14  # number of Lebedev sources
 α = 2       # DIM α parameter
@@ -57,7 +57,7 @@ function sample_reference_triangle(n_samples)
 end
 
 # Sample nodes
-n_nodes = 20000   # nodes in mesh
+n_nodes = 5000   # nodes in mesh
 n_nodes_per_element = n_nodes÷get_number_of_elements(mesh)+1
 nodelist = sample_reference_triangle(n_nodes_per_element)
 

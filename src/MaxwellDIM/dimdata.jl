@@ -30,6 +30,9 @@ struct DimData
     # Each entry `cⱼ` is the vector of coefficients of `Φ` at `eⱼ`.
     ccoeff::Vector{Vector{ComplexF64}}
 
+    # Integral operator `C̃_{α,β}[ϕ]` value at quadrature nodes.
+    integral_op::Vector{SVector{3, ComplexF64}}
+
     # LQ matrices for constructing the density interpolant `Φ`,
     # for each element.
     Lmatrices::Vector{LowerTriangular{ComplexF64, Matrix{ComplexF64}}}
@@ -63,6 +66,7 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     ϕcoeff = Vector{SVector{2, ComplexF64}}(undef, n_qnodes)
     n_ccoef = DIMENSION3 * n_src   # density interpolation coeffs: 3 per src point
     ccoeff = [Vector{ComplexF64}(undef, n_ccoef) for _ in 1:n_elements]
+    integral_op = Vector{SVector{3, ComplexF64}}(undef, n_qnodes)
     Lmatrices = [LowerTriangular(Matrix{ComplexF64}(undef, 0, 0)) for _ in 1:n_elements]
     Qmatrices = [Matrix{ComplexF64}(undef, 0, 0) for _ in 1:n_elements]
 
@@ -70,7 +74,7 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     bbox, bbox_center, bbox_radius = compute_bounding_box(gquad)
     src_radius = r * bbox_radius
     src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
-    return DimData(hmax, mesh, gquad, k, α, β, ϕcoeff, ccoeff, 
+    return DimData(hmax, mesh, gquad, k, α, β, ϕcoeff, ccoeff, integral_op,
                    Lmatrices, Qmatrices, src_list)
 end
 
@@ -112,6 +116,15 @@ Returns the total number of source points in `dimdata`.
 """
 function get_number_of_srcs(dimdata::DimData)
     return length(dimdata.src_list)
+end
+
+"""
+    reset_integral_operator_value(dimdata::DimData)
+    
+Sets to zero the value of the integral operator `dimdata.integral_op`.
+"""
+function reset_integral_operator_value(dimdata::DimData)
+    fill!(dimdata.integral_op, zero(eltype(dimdata.integral_op)))
 end
 
 """

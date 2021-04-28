@@ -145,13 +145,60 @@ function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
 end
 
 """
+    compute_integral_operator(dimdata::DimData)
 
 Computes the integral operator `C̃_{α,β}[ϕ]` at all quadrature points,
 using the density interpolation method.
 """
 function compute_integral_operator(dimdata::DimData)
-    
+    n_nodes = get_number_of_qnodes(dimdata)
+    # Set integral operator value to zero
+    reset_integral_operator_value(dimdata)
+    # Compute density interpolant for all elements
+    compute_density_interpolant(dimdata)
+
+    # Loop for computing the integral operator.
+    # (i, j) correspond to the indices of the 
+    # observation and source qnodes, respectively.
+    for i in get_qnode_indices(dimdata.gquad)
+        element_index_i = get_element_index(dimdata.gquad, i)
+        _compute_integral_operator_innerloop(dimdata, element_index_i, i)
+    end
+    # Return integral op. value
+    # at all quadrature points
+    return dimdata.integral_op
 end
+function _compute_integral_operator_innerloop(dimdata::DimData, element_index_i, i)
+    yi = dimdata.gquad.nodes[i]     # qnode i
+    ni = dimdata.gquad.normals[i]   # qnormal at qnode i
+    for j in get_outelement_qnode_indices(dimdata.gquad, element_index_i)
+        # Update integral op. value at qnode i
+        dimdata.integral_op[i] +=
+            _compute_integral_operator_integrand(dimdata, element_index_i,
+                                                 yi, ni, j)
+    end
+    # Interpolant γ₀Φ at qnode i
+    γ₀Φi = evaluate_γ₀dim(dimdata, element_index_i, i)   
+    # Update integral op. value at qnode i
+    dimdata.integral_op[i] += -0.5*γ₀Φi
+end
+function _compute_integral_operator_integrand(dimdata::DimData, element_index_i, 
+                                              yi, ni, j)
+    k, α, β = getparameters(dimdata)
+    yj = dimdata.gquad.nodes[j]                          # qnode j
+    nj = dimdata.gquad.normals[j]                        # qnormal at qnode j
+    wj = dimdata.gquad.weigths[j]                        # qweigth at qnode j
+    ϕj = dimdata.gquad.jacobians[j] * dimdata.ϕcoeff[j]  # surf. dens. ϕ at qnode j
+    γ₀Φj = evaluate_γ₀dim(dimdata, element_index_i, j)   # interpolant γ₀Φ at qnode j
+    γ₁Φj = evaluate_γ₁dim(dimdata, element_index_i, j)   # interpolant γ₁Φ at qnode j
+
+    K_input = α*ϕj - γ₀Φj               # Double layer input vector
+    T_input = β*cross(nj, ϕj) - γ₁Φj    # Single layer input vector
+    K = double_layer_kernel_eval(yi, yj, k, ni, K_input)   # Double layer operator
+    T = single_layer_kernel_eval(yi, yj, k, ni, T_input)   # Single layer operator
+    return wj*(K + T)
+end
+
 
 
 
