@@ -128,6 +128,22 @@ function reset_integral_operator_value(dimdata::DimData)
 end
 
 """
+    project_field_onto_surface_density(dimdata::DimData, field)
+
+Projects the tangential component of a vector field `field`, 
+defined on the quadrature nodes, onto the surface density `ϕ`.
+The new surface density components are stored in `dimdata.ϕcoeff`.
+"""
+function project_field_onto_surface_density(dimdata::DimData, field)
+    @assert length(field) == get_number_of_qnodes(dimdata)
+    for i in get_qnode_indices(dimdata.gquad)
+        vec = field[i]                      # vector field at qnode i
+        jac = dimdata.gquad.jacobians[i]    # jacobian at qnode i
+        dimdata.ϕcoeff[i] = jac \ vec
+    end
+end
+
+"""
     evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index::Integer)
 
 Evaluates `γ₀Φₘ(yⱼ)`, where `Φₘ` is the density interpolant
