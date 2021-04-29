@@ -28,7 +28,7 @@ end
 # Single Layer Kernel
 # n × G = γ₀ G
 function single_layer_kernel(x, y, k, nx)  
-    x==y && return zero(Point3D)
+    x==y && return zero(ComplexPoint3D)
     rvec = x - y
     r = norm(rvec)
     g = helmholtz_green_function(r, k)
@@ -43,7 +43,7 @@ end
 # Double Layer Kernel
 # n × ∇ × G = γ₁ G
 function double_layer_kernel(x, y, k, nx) 
-    x==y && return zero(Point3D)
+    x==y && return zero(ComplexPoint3D)
     rvec = x - y
     r = norm(rvec)
     g   = helmholtz_green_function(r, k)
@@ -56,7 +56,7 @@ end
 # Single Layer Kernel
 # n × G = γ₀ G
 function single_layer_kernel_eval(x, y, k, nx, ϕy)  
-    x==y && return zero(Point3D)
+    x==y && return zero(ComplexPoint3D)
     rvec = x - y
     r = norm(rvec)
     rhat = rvec/r
@@ -73,12 +73,52 @@ end
 # Double Layer Kernel
 # n × ∇ × G = γ₁ G
 function double_layer_kernel_eval(x, y, k, nx, ϕy) 
-    x==y && return zero(Point3D)
+    x==y && return zero(ComplexPoint3D)
     rvec = x - y
     r = norm(rvec)
     g = helmholtz_green_function(r, k)
     gp  = (im*k - 1/r)*g
     result = gp/r*cross(nx, cross(rvec, ϕy))
+    return result
+end
+
+"""
+    electric_dipole_electric_field(x, y, k, ϕy)  
+
+Returns the electric field at `x` produced by an electric dipole
+located at `y` with direction `ϕy` and wavenumber `k`. 
+The electric field is given by `Gₖ(x, y) * ϕy`, where `Gₖ` is the
+Green tensor.
+"""
+function electric_dipole_electric_field(x, y, k, ϕy)
+    x==y && return zero(ComplexPoint3D)
+    rvec = x - y
+    r = norm(rvec)
+    rhat = rvec/r
+    kr = k*r
+    kr2 = kr^2
+    g = helmholtz_green_function(r, k)
+    result = (1 + im/kr - 1/kr2)*ϕy
+    result += (-1 - 3im/kr + 3/kr2)*dot(rhat, ϕy)*rhat
+    result *= g
+    return result
+end
+
+"""
+    electric_dipole_magnetic_field(x, y, k, ϕy)  
+
+Returns the magnetic field at `x` produced by an electric dipole
+located at `y` with direction `ϕy` and wavenumber `k`. 
+The magnetic field is given by `1/(im*k) * ∇ × Gₖ(x, y) * ϕy`, where `Gₖ` is the
+Green tensor.
+"""
+function electric_dipole_magnetic_field(x, y, k, ϕy)
+    x==y && return zero(ComplexPoint3D)
+    rvec = x - y
+    r = norm(rvec)
+    g = helmholtz_green_function(r, k)
+    gp  = (im*k - 1/r)*g
+    result = 1/(im*k)*gp/r*cross(rvec, ϕy)
     return result
 end
 

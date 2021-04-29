@@ -31,7 +31,7 @@ struct DimData
     ccoeff::Vector{Vector{ComplexF64}}
 
     # Integral operator `C̃_{α,β}[ϕ]` value at quadrature nodes.
-    integral_op::Vector{SVector{3, ComplexF64}}
+    integral_op::Vector{ComplexPoint3D}
 
     # LQ matrices for constructing the density interpolant `Φ`,
     # for each element.
@@ -66,7 +66,7 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     ϕcoeff = Vector{SVector{2, ComplexF64}}(undef, n_qnodes)
     n_ccoef = DIMENSION3 * n_src   # density interpolation coeffs: 3 per src point
     ccoeff = [Vector{ComplexF64}(undef, n_ccoef) for _ in 1:n_elements]
-    integral_op = Vector{SVector{3, ComplexF64}}(undef, n_qnodes)
+    integral_op = Vector{ComplexPoint3D}(undef, n_qnodes)
     Lmatrices = [LowerTriangular(Matrix{ComplexF64}(undef, 0, 0)) for _ in 1:n_elements]
     Qmatrices = [Matrix{ComplexF64}(undef, 0, 0) for _ in 1:n_elements]
 
