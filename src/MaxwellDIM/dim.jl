@@ -199,17 +199,24 @@ function _compute_integral_operator_integrand(dimdata::DimData, element_index_i,
     return wj*(K + T)
 end
 
+"""
+    compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
+    compute_potencial(dimdata::DimData, x)
+
+Computes the potential `C_{α,β}[ϕ]` at all points `x` in
+`xlist`.
+"""
 function compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
     result = similar(xlist, ComplexPoint3D)
     for i in eachindex(xlist)
         x = xlist[i]
         result[i] = compute_potencial(dimdata, x)
     end
+    return result
 end
 function compute_potencial(dimdata::DimData, x)
-    result = zero(ComplexPoint3D)
-    for j in get_qnode_indices(dimdata.gquad)
-        
+    return sum(get_qnode_indices(dimdata.gquad)) do j
+        _compute_potencial_integrand(dimdata, j, x)
     end
 end
 function _compute_potencial_integrand(dimdata::DimData, j::Integer, x)
@@ -219,9 +226,12 @@ function _compute_potencial_integrand(dimdata::DimData, j::Integer, x)
     wj = dimdata.gquad.weigths[j]   # qweigth at qnode j
     ϕj = get_surface_density(dimdata, j) # surf. dens. ϕ at qnode j
     # Double layer potencial
-    Kpot = 1
+    K_input = α * ϕj
+    Kpot = double_layer_potential_kernel(x, yj, k, K_input)  
     # Single layer potencial
-    Tpot = 1
+    T_input = β * cross(nj, ϕj)
+    Tpot = single_layer_potential_kernel(x, yj, k, T_input) 
+    return wj*(Kpot + Tpot)
 end
 
 
