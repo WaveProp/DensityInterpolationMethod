@@ -128,6 +128,17 @@ function reset_integral_operator_value(dimdata::DimData)
 end
 
 """
+    get_surface_density(dimdata::DimData, qnode_index::Integer)
+
+Returns the surface density `ϕ(yⱼ) = ϕ₁τ₁ + ϕ₂τ₂` at qnode `j = qnode_index`,
+where `τ₁,τ₂` are the tangential vectors and `(ϕ₁, ϕ₂)` are coefficients
+at `yⱼ`.
+"""
+function get_surface_density(dimdata::DimData, qnode_index::Integer)
+    return dimdata.gquad.jacobians[qnode_index]*dimdata.ϕcoeff[qnode_index]
+end
+
+"""
     project_field_onto_surface_density(dimdata::DimData, field)
 
 Projects the tangential component of a vector field `field`, 
@@ -157,7 +168,7 @@ function evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index::Integer
     # Density interpolant coefficients
     ccoeff = get_dimcoeff(dimdata, element_index)   
     return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
-        single_layer_kernel_eval(qnode, z, k, qnormal, c)
+        single_layer_kernel(qnode, z, k, qnormal, c)
     end
 end
 
@@ -177,7 +188,7 @@ function evaluate_γ₀dim(dimdata::DimData, element_index, x̂)
     # Density interpolant coefficients
     ccoeff = get_dimcoeff(dimdata, element_index)   
     return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
-        single_layer_kernel_eval(node, z, k, normal, c)
+        single_layer_kernel(node, z, k, normal, c)
     end
 end
 
@@ -195,7 +206,7 @@ function evaluate_γ₁dim(dimdata::DimData, element_index, qnode_index::Integer
     # Density interpolant coefficients
     ccoeff = get_dimcoeff(dimdata, element_index)   
     return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
-        double_layer_kernel_eval(qnode, z, k, qnormal, c)
+        double_layer_kernel(qnode, z, k, qnormal, c)
     end
 end
 
@@ -215,6 +226,6 @@ function evaluate_γ₁dim(dimdata::DimData, element_index, x̂)
     # Density interpolant coefficients
     ccoeff = get_dimcoeff(dimdata, element_index)   
     return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
-        double_layer_kernel_eval(node, z, k, normal, c)
+        double_layer_kernel(node, z, k, normal, c)
     end
 end

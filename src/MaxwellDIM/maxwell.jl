@@ -1,14 +1,15 @@
 """
-Definition of Green tensor for Maxwell's equations.
+Definition of Green tensor and utility functions
+for Maxwell's equations.
 """
 
 """
-    helmholtz_green_function(r, k)
+    _helmholtz_green_function(r, k)
 
 Returns the Green function for Helmholtz equation in 3D,
 i.e. `g = exp(im*k*r)/(4π*r)`.
 """
-function helmholtz_green_function(r, k)
+function _helmholtz_green_function(r, k)
     g = exp(im*k*r)/(4π*r)
     return g
 end
@@ -25,61 +26,97 @@ function cross_product_matrix(v)
                                             -v[2],    v[1],     0))
 end
 
-# Single Layer Kernel
-# n × G = γ₀ G
-function single_layer_kernel(x, y, k, nx)  
-    x==y && return zero(ComplexPoint3D)
+"""
+    _green_tensor(x, y, k)
+    _green_tensor(x, y, k, ϕy)
+
+Returns `G(x, y)` or `G(x, y)*ϕy`, where `G` is the 
+Green tensor for Maxwell's equations with wavenumber `k`.
+"""
+function _green_tensor(x, y, k)
     rvec = x - y
     r = norm(rvec)
-    g = helmholtz_green_function(r, k)
+    g = _helmholtz_green_function(r, k)
     gp  = im*k*g - g/r
     gpp = im*k*gp - gp/r + g/r^2
     RRT = rvec*transpose(rvec) # rvec ⊗ rvecᵗ
     G = g*I + 1/k^2*(gp/r*I + (gpp/r^2 - gp/r^3)*RRT)
-    ncross = cross_product_matrix(nx)
-    return  ncross * G
+    return G
 end
-
-# Double Layer Kernel
-# n × ∇ × G = γ₁ G
-function double_layer_kernel(x, y, k, nx) 
-    x==y && return zero(ComplexPoint3D)
-    rvec = x - y
-    r = norm(rvec)
-    g   = helmholtz_green_function(r, k)
-    gp  = im*k*g - g/r
-    ncross = cross_product_matrix(nx)
-    rcross = cross_product_matrix(rvec)
-    return gp/r*ncross*rcross
-end
-
-# Single Layer Kernel
-# n × G = γ₀ G
-function single_layer_kernel_eval(x, y, k, nx, ϕy)  
-    x==y && return zero(ComplexPoint3D)
+function _green_tensor(x, y, k, ϕy)
     rvec = x - y
     r = norm(rvec)
     rhat = rvec/r
     kr = k*r
     kr2 = kr^2
-    g = helmholtz_green_function(r, k)
-
-    result = (1 + im/kr - 1/kr2)*ϕy
-    result += (-1 - 3im/kr + 3/kr2)*dot(rhat, ϕy)*rhat
-    result *= g
-    return cross(nx, result)
+    g = _helmholtz_green_function(r, k)
+    Gϕy = (1 + im/kr - 1/kr2)*ϕy
+    Gϕy += (-1 - 3im/kr + 3/kr2)*dot(rhat, ϕy)*rhat
+    Gϕy *= g
+    return Gϕy
 end
 
-# Double Layer Kernel
-# n × ∇ × G = γ₁ G
-function double_layer_kernel_eval(x, y, k, nx, ϕy) 
-    x==y && return zero(ComplexPoint3D)
+"""
+    _curl_green_tensor(x, y, k)
+    _curl_green_tensor(x, y, k, ϕy)
+
+Returns `∇ × G(x, y)` or `∇ × (G(x, y) * ϕy)`, where `G` 
+is the Green tensor for Maxwell's equations with wavenumber `k`.
+"""
+function _curl_green_tensor(x, y, k)
     rvec = x - y
     r = norm(rvec)
-    g = helmholtz_green_function(r, k)
-    gp  = (im*k - 1/r)*g
-    result = gp/r*cross(nx, cross(rvec, ϕy))
-    return result
+    g   = _helmholtz_green_function(r, k)
+    gp  = im*k*g - g/r
+    rcross = cross_product_matrix(rvec)
+    curl_G = gp/r*rcross
+    return curl_G
+end
+function _curl_green_tensor(x, y, k, ϕy)
+    rvec = x - y
+    r = norm(rvec)
+    g = _helmholtz_green_function(r, k)
+    gp = (im*k - 1/r)*g
+    curl_Gϕy = gp/r*cross(rvec, ϕy)
+    return curl_Gϕy
+end
+
+"""
+    single_layer_kernel(x, y, k, nx) 
+    single_layer_kernel(x, y, k, nx, ϕy)  
+
+Returns the single layer integral operator 
+kernel `γ₀G = nₓ × G` or `γ₀(G*ϕy) = nₓ × G*ϕy`.
+"""
+function single_layer_kernel(x, y, k, nx)  
+    G = _green_tensor(x, y, k)
+    ncross = cross_product_matrix(nx)
+    SL_kernel = ncross * G
+    return SL_kernel
+end
+function single_layer_kernel(x, y, k, nx, ϕy)  
+    Gϕy = _green_tensor(x, y, k, ϕy)
+    SL_kernel = cross(nx, Gϕy)
+    return SL_kernel
+end
+
+"""
+    double_layer_kernel(x, y, k, nx) 
+    double_layer_kernel(x, y, k, nx, ϕy)  
+
+Returns the double layer integral operator 
+kernel `γ₁G = nₓ × ∇ × G` or `γ₁(G*ϕy) = nₓ × ∇ × (G*ϕy)`.
+"""
+function double_layer_kernel(x, y, k, nx) 
+    curl_G = _curl_green_tensor(x, y, k)
+    ncross = cross_product_matrix(nx)
+    DL_kernel = ncross * curl_G
+    return DL_kernel
+end
+function double_layer_kernel(x, y, k, nx, ϕy) 
+    curl_Gϕy = _curl_green_tensor(x, y, k, ϕy)
+    DL_kernel = cross(nx, curl_Gϕy)
+    return DL_kernel
 end
 
 """
@@ -91,17 +128,7 @@ The electric field is given by `Gₖ(x, y) * ϕy`, where `Gₖ` is the
 Green tensor.
 """
 function electric_dipole_electric_field(x, y, k, ϕy)
-    x==y && return zero(ComplexPoint3D)
-    rvec = x - y
-    r = norm(rvec)
-    rhat = rvec/r
-    kr = k*r
-    kr2 = kr^2
-    g = helmholtz_green_function(r, k)
-    result = (1 + im/kr - 1/kr2)*ϕy
-    result += (-1 - 3im/kr + 3/kr2)*dot(rhat, ϕy)*rhat
-    result *= g
-    return result
+    return _green_tensor(x, y, k, ϕy)
 end
 
 """
@@ -113,12 +140,7 @@ The magnetic field is given by `1/(im*k) * ∇ × Gₖ(x, y) * ϕy`, where `Gₖ
 Green tensor.
 """
 function electric_dipole_magnetic_field(x, y, k, ϕy)
-    x==y && return zero(ComplexPoint3D)
-    rvec = x - y
-    r = norm(rvec)
-    g = helmholtz_green_function(r, k)
-    gp  = (im*k - 1/r)*g
-    result = 1/(im*k)*gp/r*cross(rvec, ϕy)
+    1/(im*k)*_curl_green_tensor(x, y, k, ϕy)
     return result
 end
 

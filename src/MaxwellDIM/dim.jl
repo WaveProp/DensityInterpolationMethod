@@ -188,17 +188,41 @@ function _compute_integral_operator_integrand(dimdata::DimData, element_index_i,
     yj = dimdata.gquad.nodes[j]                          # qnode j
     nj = dimdata.gquad.normals[j]                        # qnormal at qnode j
     wj = dimdata.gquad.weigths[j]                        # qweigth at qnode j
-    ϕj = dimdata.gquad.jacobians[j] * dimdata.ϕcoeff[j]  # surf. dens. ϕ at qnode j
+    ϕj = get_surface_density(dimdata, j)                # surf. dens. ϕ at qnode j
     γ₀Φj = evaluate_γ₀dim(dimdata, element_index_i, j)   # interpolant γ₀Φ at qnode j
     γ₁Φj = evaluate_γ₁dim(dimdata, element_index_i, j)   # interpolant γ₁Φ at qnode j
 
     K_input = α*ϕj - γ₀Φj               # Double layer input vector
     T_input = β*cross(nj, ϕj) - γ₁Φj    # Single layer input vector
-    K = double_layer_kernel_eval(yi, yj, k, ni, K_input)   # Double layer operator
-    T = single_layer_kernel_eval(yi, yj, k, ni, T_input)   # Single layer operator
+    K = double_layer_kernel(yi, yj, k, ni, K_input)   # Double layer operator
+    T = single_layer_kernel(yi, yj, k, ni, T_input)   # Single layer operator
     return wj*(K + T)
 end
 
+function compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
+    result = similar(xlist, ComplexPoint3D)
+    for i in eachindex(xlist)
+        x = xlist[i]
+        result[i] = compute_potencial(dimdata, x)
+    end
+end
+function compute_potencial(dimdata::DimData, x)
+    result = zero(ComplexPoint3D)
+    for j in get_qnode_indices(dimdata.gquad)
+        
+    end
+end
+function _compute_potencial_integrand(dimdata::DimData, j::Integer, x)
+    k, α, β = getparameters(dimdata)
+    yj = dimdata.gquad.nodes[j]     # qnode j
+    nj = dimdata.gquad.normals[j]   # qnormal at qnode j
+    wj = dimdata.gquad.weigths[j]   # qweigth at qnode j
+    ϕj = get_surface_density(dimdata, j) # surf. dens. ϕ at qnode j
+    # Double layer potencial
+    Kpot = 1
+    # Single layer potencial
+    Tpot = 1
+end
 
 
 
