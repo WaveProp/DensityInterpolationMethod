@@ -60,7 +60,7 @@ end
     _curl_green_tensor(x, y, k)
     _curl_green_tensor(x, y, k, ϕy)
 
-Returns `∇ × G(x, y)` or `∇ × (G(x, y) * ϕy)`, where `G` 
+Returns `∇ₓ × G(x, y)` or `∇ₓ × (G(x, y) * ϕy)`, where `G` 
 is the Green tensor for Maxwell's equations with wavenumber `k`.
 """
 function _curl_green_tensor(x, y, k)
@@ -105,7 +105,7 @@ end
     double_layer_kernel(x, y, k, nx, ϕy)  
 
 Returns the double layer integral operator 
-kernel `γ₁G = nₓ × ∇ × G` or `γ₁(G*ϕy) = nₓ × ∇ × (G*ϕy)`.
+kernel `γ₁G = nₓ × ∇ₓ × G` or `γ₁(G*ϕy) = nₓ × ∇ₓ × (G*ϕy)`.
 """
 function double_layer_kernel(x, y, k, nx) 
     curl_G = _curl_green_tensor(x, y, k)
@@ -117,6 +117,34 @@ function double_layer_kernel(x, y, k, nx, ϕy)
     curl_Gϕy = _curl_green_tensor(x, y, k, ϕy)
     DL_kernel = cross(nx, curl_Gϕy)
     return DL_kernel
+end
+
+"""
+    single_layer_potential_kernel(x, y, k) 
+    single_layer_potential_kernel(x, y, k, ϕy)  
+
+Returns the single layer potential 
+kernel `G` or `G*ϕy`.
+"""
+function single_layer_potential_kernel(x, y, k)  
+    return _green_tensor(x, y, k)
+end
+function single_layer_potential_kernel(x, y, k, ϕy)  
+    return _green_tensor(x, y, k, ϕy)
+end
+
+"""
+    double_layer_potential_kernel(x, y, k) 
+    double_layer_potential_kernel(x, y, k, ϕy)  
+
+Returns the double layer potential 
+kernel `∇ₓ × G` or `∇ₓ × (G*ϕy)`.
+"""
+function double_layer_potential_kernel(x, y, k)
+    return _curl_green_tensor(x, y, k)
+end
+function double_layer_potential_kernel(x, y, k, ϕy) 
+    return _curl_green_tensor(x, y, k, ϕy)
 end
 
 """
