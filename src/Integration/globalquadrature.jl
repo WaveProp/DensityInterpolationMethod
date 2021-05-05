@@ -12,35 +12,50 @@ const JacMatrix = SMatrix{DIMENSION3, DIMENSION2,
                           Float64, DIMENSION3*DIMENSION2}
 
 """
+    struct QNode
+
+Structure that contains the concrete information of a single 
+quadrature node, i.e., the quadrature point, weigth, normal and
+jacobian.
+"""                        
+struct QNode
+    index::Int64         # QNode global index
+    element_index::Int64 # Index of the element to which QNode belongs
+    qnode::Point3D       # *Lifted* quadrature nodes
+    weigth::Float64      # *Lifted* quadrature weigth
+    jacobian::JacMatrix  # Jacobian matrices at qnode
+    normal::Point3D      # Normal vectors at qnodes
+end
+
+"""
+    get_qnode_data(qnode::QNode)
+
+Returns `(x, w, jac, n)` of `qnode`, where `x` is the *lifted* quadrature node, 
+`w` is the *lifted* quadrature weight, `jac` is the jacobian at `x` 
+and `n` is the normal at `x`.
+"""
+function get_qnode_data(qnode::QNode)
+    return qnode.qnode, qnode.weigth, qnode.jacobian, qnode.normal
+end
+
+"""
     struct GlobalQuadrature
 
 Structure that contains the concrete information of the quadrature,
-i.e., quadrature nodes, weigths, normals, jacobians and elements.
+i.e., quadrature nodes (`QNode`) and elements.
 """                        
 struct GlobalQuadrature
-    nodes::Vector{Point3D}          # List of *lifted* quadrature nodes
-    weigths::Vector{Float64}        # List of *lifted* quadrature weigths
-    jacobians::Vector{JacMatrix}    # List of jacobian matrices at qnodes
-    normals::Vector{Point3D}        # List of normal vectors at qnodes
-    
+    # List of QNodes.
+    qnodes::Vector{QNode}    
     # List of elements.
     # Each element correspond to a vector `[i₁, i₂, ..., iₙ]` which 
     # contains the indices of the `n` qnodes of the element.
-    el2indices::Vector{Vector{Int64}}     
-    
-    # Mapping from qnode indices to element indices.
-    index2element::Vector{Int64}
-
+    elements::Vector{Vector{Int64}}     
     # Constructor
     function GlobalQuadrature(n_qnodes, n_elements)
-        nodes = Vector{Point3D}(undef, n_qnodes)
-        weigths = Vector{Float64}(undef, n_qnodes)
-        jacobians = Vector{JacMatrix}(undef, n_qnodes)
-        normals = Vector{Point3D}(undef, n_qnodes)
-        el2indices = Vector{Vector{Int64}}(undef, n_elements)
-        index2element = Vector{Int64}(undef, n_qnodes)
-        return new(nodes, weigths, jacobians, 
-                   normals, el2indices, index2element)
+        qnodes = Vector{QNode}(undef, n_qnodes)
+        elements = Vector{Vector{Int64}}(undef, n_elements)
+        return new(qnodes, elements)
     end
 end
 
@@ -55,44 +70,57 @@ function generate_globalquadrature(mesh::GenericMesh; order=2)
     n_elements = get_number_of_elements(mesh)
     gquad = GlobalQuadrature(n_qnodes, n_elements)
 
-    index = 1  # for computing the element indices
+    qnode_index = 1  # for computing the qnode indices
     for (etype, elements) in get_etypes_and_elements(mesh)
         qrule = get_qrule_for_element(etype, order)
-        index = _add_elementlist_to_gquad(gquad, elements, qrule, index)
+        qnode_index = _add_elementlist_to_gquad(gquad, elements, qrule, qnode_index)
     end
-    @assert index == n_qnodes+1
+    @assert qnode_index == n_qnodes+1 # sanity check
     return gquad
 end
-function _add_elementlist_to_gquad(gquad::GlobalQuadrature, elements, qrule, index)
+function _add_elementlist_to_gquad(gquad::GlobalQuadrature, elements, qrule, qnode_index)
     for el in elements
-        index = _add_element_to_gquad(gquad, el, qrule, index)
+        qnode_index = _add_element_to_gquad(gquad, el, qrule, qnode_index)
     end
-    return index
+    return qnode_index
 end
-function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, index)
+function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, qnode_index)
     # Get element index
-    if index > 1
-        element_index = gquad.index2element[index-1]+1
+    if qnode_index > 1
+        last_qnode = gquad.qnodes[qnode_index-1]
+        element_index = last_qnode.element_index+1
     else
         element_index = 1
     end
 
     # Save data in GlobalQuadrature
     qdata = get_quadrature_data(qrule, el)
-    initial_index = index
+    initial_index = qnode_index
     for (xᵢ, wᵢ, jacᵢ, nᵢ) in qdata
-        gquad.nodes[index] = xᵢ
-        gquad.weigths[index] = wᵢ
-        gquad.jacobians[index] = jacᵢ
-        gquad.normals[index] = nᵢ
-        gquad.index2element[index] = element_index
-        index += 1
+        gquad.qnodes[qnode_index] = 
+            QNode(qnode_index, element_index, xᵢ, wᵢ, jacᵢ, nᵢ)
+        qnode_index += 1
     end
-    final_index = index-1
+    final_index = qnode_index-1
 
     # Save element data
-    gquad.el2indices[element_index] = collect(initial_index:final_index)
-    return index
+    gquad.elements[element_index] = collect(initial_index:final_index)
+    return qnode_index
+end
+
+"""
+    get_qnodes(gquad::GlobalQuadrature)
+    get_qnodes(gquad::GlobalQuadrature, element_index::Integer)
+
+Returns all `QNodes` in `gquad`. Otherwise, returns the `QNodes` in
+the element `element_index`.
+"""
+function get_qnodes(gquad::GlobalQuadrature)
+    return gquad.qnodes
+end
+function get_qnodes(gquad::GlobalQuadrature, element_index::Integer)
+    qnode_indices = get_inelement_qnode_indices(gquad, element_index)
+    return gquad.qnodes[qnode_indices]
 end
 
 """
@@ -101,7 +129,7 @@ end
 Returns the total number of quadrature nodes of the GlobalQuadrature.
 """
 function get_number_of_qnodes(gquad::GlobalQuadrature)
-    return length(gquad.nodes)
+    return length(gquad.qnodes)
 end
 
 """
@@ -110,7 +138,7 @@ end
 Returns the total number of elements of the GlobalQuadrature.
 """
 function get_number_of_elements(gquad::GlobalQuadrature)
-    return length(gquad.el2indices)
+    return length(gquad.elements)
 end
 
 """
@@ -119,7 +147,7 @@ end
 Returns an `UnitRange` containing the indices of all qnodes.
 """
 function get_qnode_indices(gquad::GlobalQuadrature)
-    return eachindex(gquad.nodes)
+    return eachindex(gquad.qnodes)
 end
 
 """
@@ -128,7 +156,7 @@ end
 Returns an `UnitRange` containing the indices of all elements.
 """
 function get_element_indices(gquad::GlobalQuadrature)
-    return eachindex(gquad.el2indices)
+    return eachindex(gquad.elements)
 end
 
 """
@@ -137,7 +165,8 @@ end
 Returns the element index where `qnode_index` belongs.
 """
 function get_element_index(gquad::GlobalQuadrature, qnode_index::Integer)
-    return gquad.index2element[qnode_index]
+    qnode = gquad.qnodes[qnode_index]
+    return qnode.element_index
 end
 
 """
@@ -146,7 +175,7 @@ end
 Returns the indices of the qnodes that lie on the element `element_index`.
 """
 function get_inelement_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
-    inelement_qnode_indices = gquad.el2indices[element_index]
+    inelement_qnode_indices = gquad.elements[element_index]
     return inelement_qnode_indices
 end
 
@@ -155,7 +184,7 @@ end
 
 Returns an iterator with the indices of the qnodes that do not lie 
 on the element `element_index`. This assumes that the qnodes of
-an element are stored (in `gquad.nodes`) contiguously (not necessarily in order).
+an element are stored (in `gquad.qnodes`) contiguously (not necessarily in order).
 """
 function get_outelement_qnode_indices(gquad::GlobalQuadrature, element_index::Integer)
     inelement_qnode_indices = get_inelement_qnode_indices(gquad, element_index)
@@ -173,7 +202,8 @@ end
 Returns the node data `(nodes, normals, jacobians)` in `element`.
 """
 function get_nodedata_from_element(gquad::GlobalQuadrature, element_index::Integer)
-    element = gquad.el2indices[element_index]
+    ERASE
+    element = gquad.elements[element_index]
     return get_nodedata_from_element(gquad::GlobalQuadrature, element)
 end
 function get_nodedata_from_element(gquad::GlobalQuadrature, element)
@@ -190,9 +220,11 @@ Returns the bounding box `[low_corner, high_corner]`, its center and radius,
 for the quadrature nodes in `gquad`.
 """
 function compute_bounding_box(gquad::GlobalQuadrature)
-    low_corner = first(gquad.nodes)
-    high_corner = first(gquad.nodes)
-    for pt in gquad.nodes
+    first_qnode = first(gquad.qnodes)
+    low_corner = first_qnode.qnode
+    high_corner = first_qnode.qnode
+    for qnode_obj in gquad.qnodes
+        pt = qnode_obj.qnode
         low_corner = min.(low_corner, pt)
         high_corner = max.(high_corner, pt)
     end
