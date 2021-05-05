@@ -3,13 +3,15 @@ Structures that contains the data for the
 Density Interpolation Method.
 """
 
+abstract type AbstractDimData end
+
 """
     struct DimData
 
 Structure that contains all necessary data
 for the Density Interpolation Method.
 """
-struct DimData
+struct DimData <: AbstractDimData
     # Mesh and quadrature data
     hmax::Float64                  # Maximum element size
     mesh::GenericMesh              # Contains the elements parametrization
@@ -79,73 +81,73 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
 end
 
 """
-    getparameters(dimdata::DimData)
+    getparameters(dimdata::AbstractDimData)
 
 Returns the wavenumber `k` and the `α`, `β` density 
 interpolant parameters of `dimdata`.
 """
-function getparameters(dimdata::DimData)
+function getparameters(dimdata::AbstractDimData)
     return dimdata.k, dimdata.α, dimdata.β
 end
 
 """
-    get_dimcoeff(dimdata::DimData, element_index)
+    get_dimcoeff(dimdata::AbstractDimData, element_index)
 
 Returns the density interpolant coefficients `cⱼ` for element `eⱼ`,
 with `j = element_index`. The coefficients is reshaped into a list
 of complex 3D vectors for each source point.
 """
-function get_dimcoeff(dimdata::DimData, element_index)
+function get_dimcoeff(dimdata::AbstractDimData, element_index)
     ccoeff = dimdata.ccoeff[element_index]
     return reinterpret(SVector{DIMENSION3, ComplexF64}, ccoeff)
 end
 
 """
-    get_number_of_qnodes(dimdata::DimData)
+    get_number_of_qnodes(dimdata::AbstractDimData)
 
 Returns the total number of quadrature nodes in `dimdata`.
 """
-function get_number_of_qnodes(dimdata::DimData)
+function get_number_of_qnodes(dimdata::AbstractDimData)
     return get_number_of_qnodes(dimdata.gquad)
 end
 
 """
-    get_number_of_srcs(dimdata::DimData)
+    get_number_of_srcs(dimdata::AbstractDimData)
 
 Returns the total number of source points in `dimdata`.
 """
-function get_number_of_srcs(dimdata::DimData)
+function get_number_of_srcs(dimdata::AbstractDimData)
     return length(dimdata.src_list)
 end
 
 """
-    reset_integral_operator_value(dimdata::DimData)
+    reset_integral_operator_value(dimdata::AbstractDimData)
     
 Sets to zero the value of the integral operator `dimdata.integral_op`.
 """
-function reset_integral_operator_value(dimdata::DimData)
+function reset_integral_operator_value(dimdata::AbstractDimData)
     fill!(dimdata.integral_op, zero(eltype(dimdata.integral_op)))
 end
 
 """
-    get_surface_density(dimdata::DimData, qnode_index::Integer)
+    get_surface_density(dimdata::AbstractDimData, qnode_index::Integer)
 
 Returns the surface density `ϕ(yⱼ) = ϕ₁τ₁ + ϕ₂τ₂` at qnode `j = qnode_index`,
 where `τ₁,τ₂` are the tangential vectors and `(ϕ₁, ϕ₂)` are coefficients
 at `yⱼ`.
 """
-function get_surface_density(dimdata::DimData, qnode_index::Integer)
+function get_surface_density(dimdata::AbstractDimData, qnode_index::Integer)
     return dimdata.gquad.jacobians[qnode_index]*dimdata.ϕcoeff[qnode_index]
 end
 
 """
-    project_field_onto_surface_density(dimdata::DimData, field)
+    project_field_onto_surface_density(dimdata::AbstractDimData, field)
 
 Projects the tangential component of a vector field `field`, 
 defined on the quadrature nodes, onto the surface density `ϕ`.
 The new surface density components are stored in `dimdata.ϕcoeff`.
 """
-function project_field_onto_surface_density(dimdata::DimData, field)
+function project_field_onto_surface_density(dimdata::AbstractDimData, field)
     @assert length(field) == get_number_of_qnodes(dimdata)
     for i in get_qnode_indices(dimdata.gquad)
         vec = field[i]                      # vector field at qnode i
@@ -155,13 +157,13 @@ function project_field_onto_surface_density(dimdata::DimData, field)
 end
 
 """
-    evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index::Integer)
+    evaluate_γ₀dim(dimdata::AbstractDimData, element_index, qnode_index::Integer)
 
 Evaluates `γ₀Φₘ(yⱼ)`, where `Φₘ` is the density interpolant
 of element `eₘ` with `m = element_index` and `yⱼ` is a quadrature 
 node with `j = qnode_index`.
 """
-function evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index::Integer)
+function evaluate_γ₀dim(dimdata::AbstractDimData, element_index, qnode_index::Integer)
     k = dimdata.k       # wavenumber
     qnode = dimdata.gquad.nodes[qnode_index]
     qnormal = dimdata.gquad.normals[qnode_index]
@@ -173,13 +175,13 @@ function evaluate_γ₀dim(dimdata::DimData, element_index, qnode_index::Integer
 end
 
 """
-    evaluate_γ₀dim(dimdata::DimData, element_index, x̂)
+    evaluate_γ₀dim(dimdata::AbstractDimData, element_index, x̂)
 
 Evaluates `γ₀Φₘ(y(x̂))`, where `Φₘ` is the density interpolant
 of element `eₘ` with `m = element_index`,`y` is the element parametrization
 and `x̂` is a 2D point in parametric coordinates.
 """
-function evaluate_γ₀dim(dimdata::DimData, element_index, x̂)
+function evaluate_γ₀dim(dimdata::AbstractDimData, element_index, x̂)
     @assert length(x̂) == 2
     k = dimdata.k       # wavenumber
     element = getelement(dimdata.mesh, element_index)
@@ -193,13 +195,13 @@ function evaluate_γ₀dim(dimdata::DimData, element_index, x̂)
 end
 
 """
-    evaluate_γ₁dim(dimdata::DimData, element_index, qnode_index::Integer)
+    evaluate_γ₁dim(dimdata::AbstractDimData, element_index, qnode_index::Integer)
 
 Evaluates `γ₁Φₘ(yⱼ)`, where `Φₘ` is the density interpolant
 of element `eₘ` with `m = element_index` and `yⱼ` is a quadrature 
 node with `j = qnode_index`.
 """
-function evaluate_γ₁dim(dimdata::DimData, element_index, qnode_index::Integer)
+function evaluate_γ₁dim(dimdata::AbstractDimData, element_index, qnode_index::Integer)
     k = dimdata.k       # wavenumber
     qnode = dimdata.gquad.nodes[qnode_index]
     qnormal = dimdata.gquad.normals[qnode_index]
@@ -211,13 +213,13 @@ function evaluate_γ₁dim(dimdata::DimData, element_index, qnode_index::Integer
 end
 
 """
-    evaluate_γ₁dim(dimdata::DimData, element_index, x̂)
+    evaluate_γ₁dim(dimdata::AbstractDimData, element_index, x̂)
 
 Evaluates `γ₁Φₘ(y(x̂))`, where `Φₘ` is the density interpolant
 of element `eₘ` with `m = element_index`,`y` is the element parametrization
 and `x̂` is a 2D point in parametric coordinates.
 """
-function evaluate_γ₁dim(dimdata::DimData, element_index, x̂)
+function evaluate_γ₁dim(dimdata::AbstractDimData, element_index, x̂)
     @assert length(x̂) == 2
     k = dimdata.k       # wavenumber
     element = getelement(dimdata.mesh, element_index)

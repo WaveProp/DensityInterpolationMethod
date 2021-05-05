@@ -4,19 +4,19 @@ Density Interpolation Method.
 """
 
 """
-    assemble_dim_matrices(dimdata::DimData)
-    assemble_dim_matrices(dimdata::DimData, element_index::Integer)
+    assemble_dim_matrices(dimdata::AbstractDimData)
+    assemble_dim_matrices(dimdata::AbstractDimData, element_index::Integer)
 
 Assembles the matrix for computing the Density Interpolant and
 stores its LQ decomposition in `dimdata`, for each element in `dimdata`.
 """
-function assemble_dim_matrices(dimdata::DimData)
+function assemble_dim_matrices(dimdata::AbstractDimData)
     # Compute DIM matrices for each element
     for element_index in get_element_indices(dimdata.gquad) 
         assemble_dim_matrices(dimdata, element_index)
     end
 end
-function assemble_dim_matrices(dimdata::DimData, element_index)
+function assemble_dim_matrices(dimdata::AbstractDimData, element_index)
     # Get data
     k, _, _ = getparameters(dimdata)
     src_list = dimdata.src_list
@@ -37,7 +37,7 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
         jacobian = jac_list[r_index]        # jacobian at qnode
         for l_index in 1:n_src
             src = src_list[l_index]       # src point
-            _assemble_submatrix!(Mmatrix, qnode, normal, jacobian, 
+            _assemble_submatrix!(dimdata, Mmatrix, qnode, normal, jacobian, 
                                  src, k, n_qnodes, r_index, l_index) 
         end
     end
@@ -47,7 +47,7 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
     dimdata.Lmatrices[element_index] = LowerTriangular(lqobject.L)
     dimdata.Qmatrices[element_index] = Matrix(lqobject.Q)
 end
-function _assemble_submatrix!(Mmatrix, qnode, normal, jacobian, src, k, 
+function _assemble_submatrix!(dimdata::AbstractDimData, Mmatrix, qnode, normal, jacobian, src, k, 
                               n_qnodes, r_index, l_index) 
     # Jᵗγ₀G, size=2×3
     M0submatrix = transpose(jacobian) *
@@ -77,25 +77,25 @@ function _assemble_submatrix!(Mmatrix, qnode, normal, jacobian, src, k,
 end
 
 """
-    compute_density_interpolant(dimdata::DimData)
-    compute_density_interpolant(dimdata::DimData, element_index)
+    compute_density_interpolant(dimdata::AbstractDimData)
+    compute_density_interpolant(dimdata::AbstractDimData, element_index)
 
 Computes the Density Interpolant coefficients, for each element
 in `dimdata`. This assumes that [`assemble_dim_matrices`](@ref) has already
 been called.
 """
-function compute_density_interpolant(dimdata::DimData)
+function compute_density_interpolant(dimdata::AbstractDimData)
     # Compute DIM matrices for each element
     for element_index in get_element_indices(dimdata.gquad) 
         compute_density_interpolant(dimdata, element_index)
     end
 end
-function compute_density_interpolant(dimdata::DimData, element_index)
-    # Bvector: pre-allocated RHS vector
+function compute_density_interpolant(dimdata::AbstractDimData, element_index)
     # Get data
     _, α, β = getparameters(dimdata)
     qnode_list, _, jac_list = get_nodedata_from_element(dimdata.gquad, 
                                                         element_index)
+    qnode_indices = get_inelement_qnode_indices(dimdata.gquad, element_index)
     n_qnodes = length(qnode_list)  # number of qnodes in element
 
     # Initialize RHS vector
@@ -103,9 +103,9 @@ function compute_density_interpolant(dimdata::DimData, element_index)
     Bvector = Vector{ComplexF64}(undef, 4*n_qnodes)
 
     # Assemble RHS
-    for r_index in 1:n_qnodes
+    for (r_index, qnode_index) in zip(eachindex(qnode_list), qnode_indices)
         jacobian = jac_list[r_index]        # jacobian at qnode
-        ϕcoeff = dimdata.ϕcoeff[r_index]    # density coefficients at qnode
+        ϕcoeff = dimdata.ϕcoeff[qnode_index]    # density coefficients at qnode
         _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index)
     end
     _apply_scaling_to_rhs!(Bvector, α, β)
@@ -134,7 +134,7 @@ function _apply_scaling_to_rhs!(Bvector, α, β)
         Bvector[i] = α*Bvector[i]
     end
 end
-function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
+function _solve_dim_lq!(dimdata::AbstractDimData, Bvector, element_index)
     # Solves the density interpolant system
     # using LQ decomposition and saves result
     ldiv!(dimdata.Lmatrices[element_index], 
@@ -145,12 +145,12 @@ function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
 end
 
 """
-    compute_integral_operator(dimdata::DimData)
+    compute_integral_operator(dimdata::AbstractDimData)
 
 Computes the integral operator `C̃_{α,β}[ϕ]` at all quadrature points,
 using the density interpolation method.
 """
-function compute_integral_operator(dimdata::DimData)
+function compute_integral_operator(dimdata::AbstractDimData)
     n_nodes = get_number_of_qnodes(dimdata)
     # Set integral operator value to zero
     reset_integral_operator_value(dimdata)
@@ -168,7 +168,7 @@ function compute_integral_operator(dimdata::DimData)
     # at all quadrature points
     return dimdata.integral_op
 end
-function _compute_integral_operator_innerloop(dimdata::DimData, element_index_i, i)
+function _compute_integral_operator_innerloop(dimdata::AbstractDimData, element_index_i, i)
     yi = dimdata.gquad.nodes[i]     # qnode i
     ni = dimdata.gquad.normals[i]   # qnormal at qnode i
     for j in get_outelement_qnode_indices(dimdata.gquad, element_index_i)
@@ -182,7 +182,7 @@ function _compute_integral_operator_innerloop(dimdata::DimData, element_index_i,
     # Update integral op. value at qnode i
     dimdata.integral_op[i] += -0.5*γ₀Φi
 end
-function _compute_integral_operator_integrand(dimdata::DimData, element_index_i, 
+function _compute_integral_operator_integrand(dimdata::AbstractDimData, element_index_i, 
                                               yi, ni, j)
     k, α, β = getparameters(dimdata)
     yj = dimdata.gquad.nodes[j]                          # qnode j
@@ -200,13 +200,13 @@ function _compute_integral_operator_integrand(dimdata::DimData, element_index_i,
 end
 
 """
-    compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
-    compute_potencial(dimdata::DimData, x)
+    compute_potencial(dimdata::AbstractDimData, xlist::AbstractArray{Point3D})
+    compute_potencial(dimdata::AbstractDimData, x)
 
 Computes the potential `C_{α,β}[ϕ]` at all points `x` in
 `xlist`.
 """
-function compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
+function compute_potencial(dimdata::AbstractDimData, xlist::AbstractArray{Point3D})
     result = similar(xlist, ComplexPoint3D)
     for i in eachindex(xlist)
         x = xlist[i]
@@ -214,12 +214,12 @@ function compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
     end
     return result
 end
-function compute_potencial(dimdata::DimData, x)
+function compute_potencial(dimdata::AbstractDimData, x)
     return sum(get_qnode_indices(dimdata.gquad)) do j
         _compute_potencial_integrand(dimdata, j, x)
     end
 end
-function _compute_potencial_integrand(dimdata::DimData, j::Integer, x)
+function _compute_potencial_integrand(dimdata::AbstractDimData, j::Integer, x)
     k, α, β = getparameters(dimdata)
     yj = dimdata.gquad.nodes[j]     # qnode j
     nj = dimdata.gquad.normals[j]   # qnormal at qnode j
