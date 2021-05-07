@@ -11,6 +11,7 @@ export DIMENSION2,
        Point3D, 
        Point2D, 
        ComplexPoint3D,
+       ComplexPoint2D,
        notimplemented, 
        abstractmethod,
        assert_extension
@@ -48,6 +49,16 @@ A complex 3D point, stored in a StaticArray.
 ComplexPoint3D = SVector{3, ComplexF64}.
 """
 const ComplexPoint3D = SVector{3, ComplexF64}
+
+"""
+    const ComplexPoint2D
+    const ComplexPoint2D(x1, x2)
+    const ComplexPoint2D(x::NTuple{2, ComplexF64})
+
+A complex 2D point, stored in a StaticArray.
+ComplexPoint2D = SVector{2, ComplexF64}.
+"""
+const ComplexPoint2D = SVector{2, ComplexF64}
 
 """
     notimplemented()

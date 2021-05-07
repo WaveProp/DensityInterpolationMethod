@@ -25,5 +25,4 @@ include("lebedev.jl")
 include("maxwell.jl")
 include("dimdata.jl")
 include("dim.jl")
-include("dimdata_direct.jl")
 end

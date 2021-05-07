@@ -109,6 +109,16 @@ function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, qnode_index)
 end
 
 """
+    get_qnode(gquad::GlobalQuadrature, qnode_index::Integer)
+
+Returns the `QNode` with index `qnode_index`.
+"""
+function get_qnode(gquad::GlobalQuadrature, qnode_index::Integer)
+    qnode = gquad.qnodes[qnode_index]
+    return qnode
+end
+
+"""
     get_qnodes(gquad::GlobalQuadrature)
     get_qnodes(gquad::GlobalQuadrature, element_index::Integer)
 
@@ -193,24 +203,6 @@ function get_outelement_qnode_indices(gquad::GlobalQuadrature, element_index::In
     iterator = Iterators.flatten((1:min_index-1, 
                                   max_index+1:n_qnodes))
     return iterator
-end
-
-"""
-    get_nodedata_from_element(gquad::GlobalQuadrature, element_index::Integer)
-    get_nodedata_from_element(gquad::GlobalQuadrature, element)
-
-Returns the node data `(nodes, normals, jacobians)` in `element`.
-"""
-function get_nodedata_from_element(gquad::GlobalQuadrature, element_index::Integer)
-    ERASE
-    element = gquad.elements[element_index]
-    return get_nodedata_from_element(gquad::GlobalQuadrature, element)
-end
-function get_nodedata_from_element(gquad::GlobalQuadrature, element)
-    nodes = gquad.nodes[element]
-    normals = gquad.normals[element]
-    jacobians = gquad.jacobians[element]
-    return nodes, normals, jacobians
 end
 
 """ 

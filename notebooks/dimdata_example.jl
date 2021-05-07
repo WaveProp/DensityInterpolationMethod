@@ -6,10 +6,11 @@ using DensityInterpolationMethod.IO
 using DensityInterpolationMethod.Mesh
 using DensityInterpolationMethod.Integration
 using DensityInterpolationMethod.MaxwellDIM
+const DM = DensityInterpolationMethod.MaxwellDIM
 
 # Load a mesh with quadratic elements
 ELEM_ORDER = 2
-HMAX = 0.4
+HMAX = 0.5
 mesh_filename = "test/meshes/sphere1.geo"
 mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER);
 ##
@@ -27,16 +28,16 @@ dimdata = generate_dimdata(mesh, qorder=QUADRATURE_ORDER, k=k,
 # Set the surface density `ϕ` equal to `τ₁`, 
 # where `τ₁` is the (first) tangent vector
 ϕcoeff = SVector(1, 0)   # [τ₁coeff, τ₂coeff]
-for i in eachindex(dimdata.ϕcoeff)
-    dimdata.ϕcoeff[i] = ϕcoeff
+for i in eachindex(dimdata.density_coeff)
+    dimdata.density_coeff[i] = ϕcoeff
 end
 
 # Compute density interpolant coefficients for all elements
 println("Computing DIM matrices...")
-DensityInterpolationMethod.MaxwellDIM.assemble_dim_matrices(dimdata)
+DM.assemble_dim_matrices(dimdata)
 println("Done")
 println("Computing density interpolant...")
-DensityInterpolationMethod.MaxwellDIM.compute_density_interpolant(dimdata)
+DM.compute_density_interpolant(dimdata)
 println("Done")
 
 # Reference triangle sampling
@@ -67,7 +68,7 @@ nodelist = sample_reference_triangle(n_nodes_per_element)
 nϕlist = []    # β * n × density
 γ₀Φlist = []   # γ₀(density interpolant)
 γ₁Φlist = []   # γ₁(density interpolant)
-for element_index in eachindex(dimdata.gquad.el2indices)
+for element_index in eachindex(dimdata.gquad.elements)
     element = getelement(dimdata.mesh, element_index)
     for node in nodelist
         jac = getjacobian(element, node)
@@ -76,10 +77,8 @@ for element_index in eachindex(dimdata.gquad.el2indices)
         push!(ϕlist, dimdata.α * ϕ)
         push!(nϕlist, dimdata.β * cross(normal, ϕ))
 
-        γ₀Φ = DensityInterpolationMethod.MaxwellDIM. 
-                evaluate_γ₀dim(dimdata, element_index, node)
-        γ₁Φ = DensityInterpolationMethod.MaxwellDIM. 
-                evaluate_γ₁dim(dimdata, element_index, node)
+        γ₀Φ = DM.evaluate_γ₀interpolant(dimdata, element_index, node)
+        γ₁Φ = DM.evaluate_γ₁interpolant(dimdata, element_index, node)
         push!(γ₀Φlist, γ₀Φ)
         push!(γ₁Φlist, γ₁Φ)
     end

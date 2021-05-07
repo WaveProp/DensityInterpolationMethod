@@ -4,24 +4,22 @@ Density Interpolation Method.
 """
 
 """
-    assemble_dim_matrices(dimdata::AbstractDimData)
-    assemble_dim_matrices(dimdata::AbstractDimData, element_index::Integer)
+    assemble_dim_matrices(dimdata::DimData)
+    assemble_dim_matrices(dimdata::DimData, element_index::Integer)
 
 Assembles the matrix for computing the Density Interpolant and
 stores its LQ decomposition in `dimdata`, for each element in `dimdata`.
 """
-function assemble_dim_matrices(dimdata::AbstractDimData)
+function assemble_dim_matrices(dimdata::DimData)
     # Compute DIM matrices for each element
     for element_index in get_element_indices(dimdata.gquad) 
         assemble_dim_matrices(dimdata, element_index)
     end
 end
-function assemble_dim_matrices(dimdata::AbstractDimData, element_index)
+function assemble_dim_matrices(dimdata::DimData, element_index)
     # Get data
-    k, _, _ = getparameters(dimdata)
-    src_list = dimdata.src_list
-    qnode_list, normal_list, jac_list = get_nodedata_from_element(dimdata.gquad, 
-                                                                  element_index)
+    qnode_list = get_qnodes(dimdata.gquad, element_index)   # list of qnodes in element
+    src_list = dimdata.src_list      # list of interpolant source points
     n_qnodes = length(qnode_list)    # number of qnodes
     n_src = length(src_list)         # number of src points
 
@@ -31,14 +29,13 @@ function assemble_dim_matrices(dimdata::AbstractDimData, element_index)
     Mmatrix = Matrix{ComplexF64}(undef, 4*n_qnodes, 3*n_src) 
 
     # Assemble system
+    # `r_index` is the (local) qnode index
+    #  `l_index` is the src index
     for r_index in 1:n_qnodes
-        qnode = qnode_list[r_index]         # quadrature node
-        normal = normal_list[r_index]       # normal at qnode
-        jacobian = jac_list[r_index]        # jacobian at qnode
+        qnode = qnode_list[r_index]       # quadrature node object
         for l_index in 1:n_src
             src = src_list[l_index]       # src point
-            _assemble_submatrix!(dimdata, Mmatrix, qnode, normal, jacobian, 
-                                 src, k, n_qnodes, r_index, l_index) 
+            _assemble_submatrix!(dimdata, Mmatrix, qnode, src, n_qnodes, r_index, l_index) 
         end
     end
 
@@ -47,15 +44,16 @@ function assemble_dim_matrices(dimdata::AbstractDimData, element_index)
     dimdata.Lmatrices[element_index] = LowerTriangular(lqobject.L)
     dimdata.Qmatrices[element_index] = Matrix(lqobject.Q)
 end
-function _assemble_submatrix!(dimdata::AbstractDimData, Mmatrix, qnode, normal, jacobian, src, k, 
-                              n_qnodes, r_index, l_index) 
+function _assemble_submatrix!(dimdata::DimData, Mmatrix, qnode, src, n_qnodes, r_index, l_index) 
+    k, _, _ = getparameters(dimdata)
+    x, _, jac, n = get_qnode_data(qnode)
     # Jᵗγ₀G, size=2×3
-    M0submatrix = transpose(jacobian) *
-                  single_layer_kernel(qnode, src, k, normal)  
+    M0submatrix = transpose(jac) *
+                  single_layer_kernel(x, src, k, n)  
     # Jᵗ(-n x γ₁G), size=2×3
-    M1submatrix = -transpose(jacobian) *
-                  cross_product_matrix(normal) * 
-                  double_layer_kernel(qnode, src, k, normal)  
+    M1submatrix = -transpose(jac) *
+                  cross_product_matrix(n) * 
+                  double_layer_kernel(x, src, k, n)  
 
     # Initial indices (i, j)
     initial_i0 = 2*r_index - 1              # for M0
@@ -77,25 +75,22 @@ function _assemble_submatrix!(dimdata::AbstractDimData, Mmatrix, qnode, normal, 
 end
 
 """
-    compute_density_interpolant(dimdata::AbstractDimData)
-    compute_density_interpolant(dimdata::AbstractDimData, element_index)
+    compute_density_interpolant(dimdata::DimData)
+    compute_density_interpolant(dimdata::DimData, element_index)
 
 Computes the Density Interpolant coefficients, for each element
 in `dimdata`. This assumes that [`assemble_dim_matrices`](@ref) has already
 been called.
 """
-function compute_density_interpolant(dimdata::AbstractDimData)
+function compute_density_interpolant(dimdata::DimData)
     # Compute DIM matrices for each element
     for element_index in get_element_indices(dimdata.gquad) 
         compute_density_interpolant(dimdata, element_index)
     end
 end
-function compute_density_interpolant(dimdata::AbstractDimData, element_index)
+function compute_density_interpolant(dimdata::DimData, element_index)
     # Get data
-    _, α, β = getparameters(dimdata)
-    qnode_list, _, jac_list = get_nodedata_from_element(dimdata.gquad, 
-                                                        element_index)
-    qnode_indices = get_inelement_qnode_indices(dimdata.gquad, element_index)
+    qnode_list = get_qnodes(dimdata.gquad, element_index)   # list of qnodes in element
     n_qnodes = length(qnode_list)  # number of qnodes in element
 
     # Initialize RHS vector
@@ -103,54 +98,57 @@ function compute_density_interpolant(dimdata::AbstractDimData, element_index)
     Bvector = Vector{ComplexF64}(undef, 4*n_qnodes)
 
     # Assemble RHS
-    for (r_index, qnode_index) in zip(eachindex(qnode_list), qnode_indices)
-        jacobian = jac_list[r_index]        # jacobian at qnode
-        ϕcoeff = dimdata.ϕcoeff[qnode_index]    # density coefficients at qnode
-        _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index)
+    # `r_index` is the (local) qnode index
+    for r_index in 1:n_qnodes
+        qnode = qnode_list[r_index]
+        _assemble_rhs!(dimdata, Bvector, qnode, r_index)
     end
-    _apply_scaling_to_rhs!(Bvector, α, β)
+    _apply_scaling_to_rhs!(dimdata, Bvector)
 
     # Solve system using LQ decomposition
     # and save solution
     _solve_dim_lq!(dimdata, Bvector, element_index)
 end
-function _assemble_rhs!(Bvector, jacobian, ϕcoeff, r_index) 
-    # RHS = [τ₁ τ₂]ᵗ(ϕ₁τ₁ + ϕ₂τ₂), size=2×1,
-    # where J = [τ₁ τ₂] is the jacobian
-    rhs = transpose(jacobian) * jacobian * ϕcoeff   
+function _assemble_rhs!(dimdata::DimData, Bvector, qnode, r_index) 
+    # RHS = [τ₁ τ₂]ᵗϕ, size=2×1,
+    # where ϕ is the surface density
+    _, _, jacobian, _ = get_qnode_data(qnode)
+    ϕ = get_surface_density(dimdata, qnode)
+    rhs = transpose(jacobian) * ϕ   
     index = 2*r_index - 1
     for i in 1:2
         Bvector[index] = rhs[i]
         index += 1
     end
 end
-function _apply_scaling_to_rhs!(Bvector, α, β)
+function _apply_scaling_to_rhs!(dimdata::DimData, Bvector)
     # Transform a vector [b₁, ..., bₙ, x, ..., x]ᵗ
     # into [α*b₁, ..., α*bₙ, β*b₁, ..., β*bₙ]ᵗ
     @assert iseven(length(Bvector))
+    _, α, β = getparameters(dimdata)
     n = length(Bvector) ÷ 2
     for i in 1:n
         Bvector[n+i] = β*Bvector[i]
         Bvector[i] = α*Bvector[i]
     end
 end
-function _solve_dim_lq!(dimdata::AbstractDimData, Bvector, element_index)
+function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
     # Solves the density interpolant system
     # using LQ decomposition and saves result
     ldiv!(dimdata.Lmatrices[element_index], 
           Bvector)    # Solves Ly=b, store result in b
-    mul!(dimdata.ccoeff[element_index], 
+    mul!(dimdata.interpolant_coeff[element_index], 
          adjoint(dimdata.Qmatrices[element_index]), 
-         Bvector)     # ccoef = adjoint(Q)*y
+         Bvector)     # interpolant_coeff = adjoint(Q)*y
 end
 
 """
-    compute_integral_operator(dimdata::AbstractDimData)
+    compute_integral_operator(dimdata::DimData)
 
 Computes the integral operator `C̃_{α,β}[ϕ]` at all quadrature points,
 using the density interpolation method.
 """
-function compute_integral_operator(dimdata::AbstractDimData)
+function compute_integral_operator(dimdata::DimData)
     n_nodes = get_number_of_qnodes(dimdata)
     # Set integral operator value to zero
     reset_integral_operator_value(dimdata)
@@ -168,29 +166,28 @@ function compute_integral_operator(dimdata::AbstractDimData)
     # at all quadrature points
     return dimdata.integral_op
 end
-function _compute_integral_operator_innerloop(dimdata::AbstractDimData, element_index_i, i)
-    yi = dimdata.gquad.nodes[i]     # qnode i
-    ni = dimdata.gquad.normals[i]   # qnormal at qnode i
+function _compute_integral_operator_innerloop(dimdata::DimData, element_index_i, i)
+    qnode_i = get_qnode(dimdata.gquad, i)     # qnode i object
     for j in get_outelement_qnode_indices(dimdata.gquad, element_index_i)
+        qnode_j = get_qnode(dimdata.gquad, j)     # qnode j object
         # Update integral op. value at qnode i
         dimdata.integral_op[i] +=
-            _compute_integral_operator_integrand(dimdata, element_index_i,
-                                                 yi, ni, j)
+            _compute_integral_operator_integrand(dimdata, element_index_i, qnode_i, qnode_j)
     end
     # Interpolant γ₀Φ at qnode i
-    γ₀Φi = evaluate_γ₀dim(dimdata, element_index_i, i)   
+    γ₀Φi = evaluate_γ₀interpolant(dimdata, element_index_i, i)   
     # Update integral op. value at qnode i
     dimdata.integral_op[i] += -0.5*γ₀Φi
 end
-function _compute_integral_operator_integrand(dimdata::AbstractDimData, element_index_i, 
-                                              yi, ni, j)
+function _compute_integral_operator_integrand(dimdata::DimData, element_index_i, qnode_i, qnode_j)
     k, α, β = getparameters(dimdata)
-    yj = dimdata.gquad.nodes[j]                          # qnode j
-    nj = dimdata.gquad.normals[j]                        # qnormal at qnode j
-    wj = dimdata.gquad.weigths[j]                        # qweigth at qnode j
-    ϕj = get_surface_density(dimdata, j)                # surf. dens. ϕ at qnode j
-    γ₀Φj = evaluate_γ₀dim(dimdata, element_index_i, j)   # interpolant γ₀Φ at qnode j
-    γ₁Φj = evaluate_γ₁dim(dimdata, element_index_i, j)   # interpolant γ₁Φ at qnode j
+    # qnode i data
+    yi, _, _, ni = get_qnode_data(qnode_i)
+    # qnode j data
+    yj, wj, _, nj = get_qnode_data(qnode_j)
+    ϕj = get_surface_density(dimdata, qnode_j)           # surf. dens. ϕ at qnode j
+    γ₀Φj = evaluate_γ₀interpolant(dimdata, element_index_i, qnode_j)   # interpolant γ₀Φ at qnode j
+    γ₁Φj = evaluate_γ₁interpolant(dimdata, element_index_i, qnode_j)   # interpolant γ₁Φ at qnode j
 
     K_input = α*ϕj - γ₀Φj               # Double layer input vector
     T_input = β*cross(nj, ϕj) - γ₁Φj    # Single layer input vector
@@ -200,13 +197,13 @@ function _compute_integral_operator_integrand(dimdata::AbstractDimData, element_
 end
 
 """
-    compute_potencial(dimdata::AbstractDimData, xlist::AbstractArray{Point3D})
-    compute_potencial(dimdata::AbstractDimData, x)
+    compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
+    compute_potencial(dimdata::DimData, x)
 
 Computes the potential `C_{α,β}[ϕ]` at all points `x` in
 `xlist`.
 """
-function compute_potencial(dimdata::AbstractDimData, xlist::AbstractArray{Point3D})
+function compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
     result = similar(xlist, ComplexPoint3D)
     for i in eachindex(xlist)
         x = xlist[i]
@@ -214,17 +211,16 @@ function compute_potencial(dimdata::AbstractDimData, xlist::AbstractArray{Point3
     end
     return result
 end
-function compute_potencial(dimdata::AbstractDimData, x)
+function compute_potencial(dimdata::DimData, x)
     return sum(get_qnode_indices(dimdata.gquad)) do j
-        _compute_potencial_integrand(dimdata, j, x)
+        qnode = get_qnode(dimdata.gquad, j)
+        _compute_potencial_integrand(dimdata, qnode, x)
     end
 end
-function _compute_potencial_integrand(dimdata::AbstractDimData, j::Integer, x)
+function _compute_potencial_integrand(dimdata::DimData, qnode::QNode, x)
     k, α, β = getparameters(dimdata)
-    yj = dimdata.gquad.nodes[j]     # qnode j
-    nj = dimdata.gquad.normals[j]   # qnormal at qnode j
-    wj = dimdata.gquad.weigths[j]   # qweigth at qnode j
-    ϕj = get_surface_density(dimdata, j) # surf. dens. ϕ at qnode j
+    yj, wj, _, nj = get_qnode_data(qnode)   # qnode j data
+    ϕj = get_surface_density(dimdata, qnode)    # surf. dens. ϕ at qnode j
     # Double layer potencial
     K_input = α * ϕj
     Kpot = double_layer_potential_kernel(x, yj, k, K_input)  

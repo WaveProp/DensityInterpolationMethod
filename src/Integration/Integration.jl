@@ -17,6 +17,7 @@ export
     # Abstract types
     AbstractQuadratureRule,
     # Types
+    QNode,
     GlobalQuadrature,
     # Functions
     integrate,
@@ -25,6 +26,8 @@ export
     get_number_of_lnodes,
     get_number_of_qnodes,
     get_number_of_elements,
+    get_qnode,
+    get_qnodes,
     get_qnode_data,
     get_qnode_indices,
     get_element_indices,
