@@ -212,8 +212,7 @@ function compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
     return result
 end
 function compute_potencial(dimdata::DimData, x)
-    return sum(get_qnode_indices(dimdata.gquad)) do j
-        qnode = get_qnode(dimdata.gquad, j)
+    return sum(get_qnodes(dimdata.gquad)) do qnode
         _compute_potencial_integrand(dimdata, qnode, x)
     end
 end
