@@ -175,7 +175,7 @@ function _compute_integral_operator_innerloop(dimdata::DimData, element_index_i,
             _compute_integral_operator_integrand(dimdata, element_index_i, qnode_i, qnode_j)
     end
     # Interpolant γ₀Φ at qnode i
-    γ₀Φi = evaluate_γ₀interpolant(dimdata, element_index_i, i)   
+    γ₀Φi = evaluate_γ₀interpolant(dimdata, element_index_i, qnode_i)   
     # Update integral op. value at qnode i
     dimdata.integral_op[i] += -0.5*γ₀Φi
 end

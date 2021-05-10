@@ -8,18 +8,19 @@ using StaticArrays
 
 export DIMENSION2,
        DIMENSION3,
-       Point3D, 
-       Point2D, 
+       Point3D,
+       Point2D,
        ComplexPoint3D,
        ComplexPoint2D,
-       notimplemented, 
+       notimplemented,
        abstractmethod,
-       assert_extension
+       assert_extension,
+       enable_debug
 
 # Constants
 const DIMENSION2 = 2
 const DIMENSION3 = 3
-       
+
 """
     const Point3D
     const Point3D(x1, x2, x3)
@@ -67,7 +68,7 @@ Things which should probably be implemented at some point.
 """
 function notimplemented()
     error("not (yet) implemented")
-end 
+end
 
 """
     abstractmethod
@@ -77,7 +78,7 @@ to provide an implementation.
 """
 function abstractmethod(T)
     error("this method needs to be implemented by the concrete subtype $T.")
-end 
+end
 
 """
     assert_extension(fname,ext,[msg])
@@ -85,7 +86,22 @@ end
 Check that `fname` is of extension `ext`. Print the message `msg` as an assertion error otherwise.
 """
 function assert_extension(fname::String,ext::String,msg="file extension must be $(ext)")
-    r = Regex("$(ext)\$")    
+    r = Regex("$(ext)\$")
     @assert occursin(r,fname) msg
 end
+
+"""
+    debug(flag=true)
+
+Activate debugging messages by setting the environment variable `JULIA_DEBUG` to
+`DensityInterpolationMethod`. If `flag=false` deactivate debugging messages.
+"""
+function enable_debug(flag=true)
+    if flag
+        ENV["JULIA_DEBUG"] = "DensityInterpolationMethod"
+    else
+        ENV["JULIA_DEBUG"] = ""
+    end
+end
+
 end # module

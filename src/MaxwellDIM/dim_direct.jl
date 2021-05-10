@@ -1,5 +1,5 @@
 """
-DIM Methods for `DirectDimData`.
+DIM methods for `DirectDimData`.
 """
 
 """

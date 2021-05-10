@@ -19,7 +19,7 @@ regularized with the Density Interpolation Method.
 abstract type IndirectDimFormulation <: AbstractDimFormulation end
 
 """
-    abstract type IndirectDimFormulation <: AbstractDimFormulation
+    abstract type DirectDimFormulation <: AbstractDimFormulation
 
 Direct formulation. The integral operator `C̃[ϕ, φ]:= αK[ϕ] + βT[φ]` is
 regularized with the Density Interpolation Method.
