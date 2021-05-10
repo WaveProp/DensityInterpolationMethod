@@ -15,6 +15,7 @@ export DIMENSION2,
        notimplemented,
        abstractmethod,
        assert_extension,
+       print_threads_info,
        enable_debug
 
 # Constants
@@ -91,7 +92,18 @@ function assert_extension(fname::String,ext::String,msg="file extension must be 
 end
 
 """
-    debug(flag=true)
+    print_threads_info()
+
+Prints in console the total number of threads and the thread ID of each thread.
+"""
+function print_threads_info()
+    Threads.@threads for n in 1:Threads.nthreads()
+        @info "Number of threads: $(Threads.nthreads()), thread ID: $(Threads.threadid())"
+    end 
+end
+
+"""
+    enable_debug(flag=true)
 
 Activate debugging messages by setting the environment variable `JULIA_DEBUG` to
 `DensityInterpolationMethod`. If `flag=false` deactivate debugging messages.

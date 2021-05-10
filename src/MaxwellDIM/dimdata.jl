@@ -52,7 +52,7 @@ struct DimData{F<:AbstractDimFormulation}
     density2_coeff::Vector{ComplexPoint2D} 
     # Coefficients of the density interpolant `Φ` at element `eⱼ`.
     # Each entry `cⱼ` is the vector of coefficients of `Φ` at `eⱼ`.
-    interpolant_coeff::Vector{Vector{ComplexF64}}
+    interpolant_coeff::Vector{Vector{ComplexPoint3D}}
     # Integral operator `C̃_{α,β}[ϕ]` value at quadrature nodes.
     integral_op::Vector{ComplexPoint3D}
     # LQ matrices for constructing the density interpolant `Φ`,
@@ -62,6 +62,10 @@ struct DimData{F<:AbstractDimFormulation}
     # List of source points for constructing the
     # density interpolant `Φ`.
     src_list::Vector{Point3D}
+    # Reinterpreted data
+    density_coeff_data::Base.ReinterpretArray{ComplexF64, 1, ComplexPoint2D, Vector{ComplexPoint2D}, false}
+    density2_coeff_data::Base.ReinterpretArray{ComplexF64, 1, ComplexPoint2D, Vector{ComplexPoint2D}, false}
+    interpolant_coeff_data::Vector{Base.ReinterpretArray{ComplexF64, 1, ComplexPoint3D, Vector{ComplexPoint3D}, false}}
     # Constructor
     function DimData{F}(args...) where F
         msg = """Only strict subtypes of `AbstractDimFormulation`
@@ -105,17 +109,14 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     n_elements = get_number_of_elements(gquad)
     
     density_coeff = Vector{ComplexPoint2D}(undef, n_qnodes)
-    n_interpolant_coeff = DIMENSION3 * n_src   # density interpolation coeffs: 3 per src point
-    interpolant_coeff = [Vector{ComplexF64}(undef, n_interpolant_coeff) for _ in 1:n_elements]
+    interpolant_coeff = [Vector{ComplexPoint3D}(undef, n_src) for _ in 1:n_elements]
     integral_op = Vector{ComplexPoint3D}(undef, n_qnodes)
     Lmatrices = [LowerTriangular(Matrix{ComplexF64}(undef, 0, 0)) for _ in 1:n_elements]
     Qmatrices = [Matrix{ComplexF64}(undef, 0, 0) for _ in 1:n_elements]
-
     # compute source points
     bbox, bbox_center, bbox_radius = compute_bounding_box(gquad)
     src_radius = r * bbox_radius
     src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
-
     # formulation
     if indirect
         density2_coeff = Vector{ComplexPoint2D}[]
@@ -124,8 +125,12 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
         density2_coeff = Vector{ComplexPoint2D}(undef, n_qnodes)
         Formulation = DirectDimData
     end
+    # reinterpreted data
+    density_coeff_data = reinterpret(ComplexF64, density_coeff)
+    density2_coeff_data = reinterpret(ComplexF64, density2_coeff)
+    interpolant_coeff_data = [reinterpret(ComplexF64, interpolant_coeff[i]) for i in eachindex(interpolant_coeff)]
     return Formulation(hmax, mesh, gquad, k, α, β, density_coeff, density2_coeff, interpolant_coeff, integral_op,
-                   Lmatrices, Qmatrices, src_list)
+                   Lmatrices, Qmatrices, src_list, density_coeff_data, density2_coeff_data, interpolant_coeff_data)
 end
 
 """
@@ -142,12 +147,10 @@ end
     get_interpolant_coeff(dimdata::DimData, element_index)
 
 Returns the density interpolant coefficients `cⱼ` for element `eⱼ`,
-with `j = element_index`. The coefficients is reshaped into a list
-of complex 3D vectors for each source point.
+with `j = element_index`.
 """
 function get_interpolant_coeff(dimdata::DimData, element_index)
-    interpolant_coeff = dimdata.interpolant_coeff[element_index]
-    return reinterpret(SVector{DIMENSION3, ComplexF64}, interpolant_coeff)
+    return dimdata.interpolant_coeff[element_index]
 end
 
 """

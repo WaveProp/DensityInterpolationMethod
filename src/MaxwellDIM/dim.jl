@@ -137,7 +137,7 @@ function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
     # using LQ decomposition and saves result
     ldiv!(dimdata.Lmatrices[element_index], 
           Bvector)    # Solves Ly=b, store result in b
-    mul!(dimdata.interpolant_coeff[element_index], 
+    mul!(dimdata.interpolant_coeff_data[element_index], 
          adjoint(dimdata.Qmatrices[element_index]), 
          Bvector)     # interpolant_coeff = adjoint(Q)*y
 end
@@ -158,7 +158,7 @@ function compute_integral_operator(dimdata::DimData)
     # Loop for computing the integral operator.
     # (i, j) correspond to the indices of the 
     # observation and source qnodes, respectively.
-    for i in get_qnode_indices(dimdata.gquad)
+    Threads.@threads for i in get_qnode_indices(dimdata.gquad)
         element_index_i = get_element_index(dimdata.gquad, i)
         _compute_integral_operator_innerloop(dimdata, element_index_i, i)
     end
