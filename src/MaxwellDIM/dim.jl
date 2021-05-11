@@ -205,7 +205,7 @@ Computes the potential `C_{α,β}[ϕ]` at all points `x` in
 """
 function compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
     result = similar(xlist, ComplexPoint3D)
-    for i in eachindex(xlist)
+    Threads.@threads for i in eachindex(xlist)
         x = xlist[i]
         result[i] = compute_potencial(dimdata, x)
     end

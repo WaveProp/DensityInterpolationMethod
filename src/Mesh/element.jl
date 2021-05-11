@@ -123,14 +123,16 @@ struct LagrangeElement{D, N, M} <: AbstractElement{D}
     # The nodes are saved in an SMatrix so it can be passed
     # efficiently to the Forward Map (StaticPolynomial)
     nodes::SMatrix{DIMENSION3, N, Float64, M}
+    # List of Gmsh node tags   
+    nodetags::Vector{Int64}
 
     # Constructor
-    function LagrangeElement{D, N, M}(nodes_list) where {D<:AbstractReferenceShape,N,M}
+    function LagrangeElement{D, N, M}(nodes_list, nodetags) where {D<:AbstractReferenceShape,N,M}
         @assert M == N * DIMENSION3
-        @assert N == length(nodes_list)
+        @assert N == length(nodes_list) == length(nodetags)
         # Arrange nodes into SMatrix
         nodes = SMatrix{DIMENSION3, N}(vcat(nodes_list...))
-        return new{D, N, M}(nodes)
+        return new{D, N, M}(nodes, nodetags)
     end
 end
 

@@ -105,7 +105,7 @@ and the element node tags `tags`.
 """
 function _generate_element(etype, tag2node, tags)
     element_nodes = (tag2node[t] for t in tags)
-    element = etype(element_nodes)
+    element = etype(element_nodes, tags)
     return element
 end
 
