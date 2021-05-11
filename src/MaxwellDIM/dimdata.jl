@@ -117,18 +117,20 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     bbox, bbox_center, bbox_radius = compute_bounding_box(gquad)
     src_radius = r * bbox_radius
     src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
+    # reinterpreted data
+    density_coeff_data = reinterpret(ComplexF64, density_coeff)
+    interpolant_coeff_data = [reinterpret(ComplexF64, interpolant_coeff[i]) for i in eachindex(interpolant_coeff)]
     # formulation
     if indirect
+        # density2_coeff is not used
         density2_coeff = Vector{ComplexPoint2D}[]
+        density2_coeff_data = density_coeff_data
         Formulation = IndirectDimData
     else
         density2_coeff = Vector{ComplexPoint2D}(undef, n_qnodes)
+        density2_coeff_data = reinterpret(ComplexF64, density2_coeff)
         Formulation = DirectDimData
     end
-    # reinterpreted data
-    density_coeff_data = reinterpret(ComplexF64, density_coeff)
-    density2_coeff_data = reinterpret(ComplexF64, density2_coeff)
-    interpolant_coeff_data = [reinterpret(ComplexF64, interpolant_coeff[i]) for i in eachindex(interpolant_coeff)]
     return Formulation(hmax, mesh, gquad, k, α, β, density_coeff, density2_coeff, interpolant_coeff, integral_op,
                    Lmatrices, Qmatrices, src_list, density_coeff_data, density2_coeff_data, interpolant_coeff_data)
 end
