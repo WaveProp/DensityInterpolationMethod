@@ -105,4 +105,38 @@ function _compute_hmax_element(element)
     return hmax
 end
 
+"""
+    find_neighboring_elements(mesh::GenericMesh)
+
+Returns `[l₁, ..., lₙ]`, where `lᵢ` is the list of element indices that are neighbors to element `i`.
+"""
+function find_neighboring_elements(mesh::GenericMesh)
+    n_elements = get_number_of_elements(mesh)
+    n_lnodes = get_number_of_lnodes(mesh)
+    # Find common-tags elements
+    data = Dict{Int64, Vector{Int64}}()
+    for (el_index, el) in enumerate(getelements(mesh))
+        for tag in el.nodetags
+            if haskey(data, tag)
+                append!(data[tag], el_index)
+            else
+                data[tag] = [el_index]
+            end
+        end
+    end
+    # Generate neighbor list
+    neighbor_list = [Int64[] for _ in 1:n_elements]
+    for el_index_list in values(data)
+        for i in el_index_list
+            for j in el_index_list
+                if i != j && j ∉ neighbor_list[i]
+                    push!(neighbor_list[i], j)
+                end
+            end
+        end
+    end
+    return neighbor_list
+end
+
+
 
