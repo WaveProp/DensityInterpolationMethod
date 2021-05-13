@@ -46,73 +46,40 @@ getqweights(q::AbstractQuadratureRule) = get_qnodes_and_qweights(q)[2]
 
 
 """
-    struct GaussQuadrature{D, N} <: AbstractQuadratureRule{D}
+    struct GaussQuadrature{D, O} <: AbstractQuadratureRule{D}
 
-Tabulated `N`-point symmetric Gauss quadrature rule for integration over `D`.
-This is currently implemented *by hand* for low values of `N` on triangles.
+Tabulated symmetric Gauss quadrature rule of order `O` for integration over `D`.
+This is currently implemented on triangles by calling the Gmsh API.
 """
-struct GaussQuadrature{D, N} <: AbstractQuadratureRule{D} 
-end
-GaussQuadrature(ref,n) = GaussQuadrature{typeof(ref),n}()
-GaussQuadrature(ref;n) = GaussQuadrature{typeof(ref),n}()
-
-@generated function 
-    get_qnodes_and_qweights(q::GaussQuadrature{<:ReferenceTriangle, N}) where {N}
-    if N == 1
-        x = SVector((Point2D(1/3, 1/3),))
-        w = SVector(1/2)
-    elseif N == 3
-        x = SVector(Point2D(1/6,1/6),
-                    Point2D(2/3,1/6),
-                    Point2D(1/6,2/3))
-        w = SVector(1/6, 1/6, 1/6)
-    elseif N == 4
-        x = SVector(Point2D(1/3,1/3),
-                    Point2D(1/5,1/5),
-                    Point2D(1/5,3/5),
-                    Point2D(3/5,1/5))
-        w = SVector(-9/32, 25/96, 25/96, 25/96)
-    elseif N == 6
-        x = SVector(Point2D(0.445948490915965, 0.445948490915965),
-                    Point2D(0.445948490915965, 0.10810301816807),
-                    Point2D(0.10810301816807, 0.445948490915965),
-                    Point2D(0.091576213509771, 0.091576213509771),
-                    Point2D(0.091576213509771, 0.816847572980459),
-                    Point2D(0.816847572980459, 0.091576213509771))
-        w = SVector(0.111690794839005, 0.111690794839005, 0.111690794839005, 
-                    0.054975871827661, 0.054975871827661, 0.054975871827661)
-    else
-        notimplemented()
-    end
-    return :($x,$w)
+struct GaussQuadrature{D, O} <: AbstractQuadratureRule{D} 
+    GaussQuadrature(ref::Type{AbstractReferenceShape}, order) = new{ref, order}()
+    GaussQuadrature(ref, order) = new{typeof(ref), order}()
 end
 
 """
-    get_number_of_qnodes(q::GaussQuadrature{D, N})
+    get_number_of_qnodes(q::GaussQuadrature)
 
 Returns the total number of quadrature nodes (for a single element) 
 associated with the quadrature rule `q`.
 """
-function get_number_of_qnodes(q::GaussQuadrature{D, N}) where {D, N}
-    return N
+function get_number_of_qnodes(q::GaussQuadrature)
+    _, w = get_qnodes_and_qweights(q)
+    return length(w)
 end
 
 """
-    get_qrule_for_reference_shape(ref,order)
+    get_qrule_for_reference_shape(ref, order)
 
 Given a `ref`erence shape and a desired quadrature `order`, return
 an appropiate quadrature rule.
 """
 function get_qrule_for_reference_shape(ref, order)
     if ref isa ReferenceTriangle
-        if order <= 1
-            return GaussQuadrature(ref, n=1)
-        elseif order <= 2
-            return GaussQuadrature(ref, n=3)
-        elseif order <= 3
-            return GaussQuadrature(ref, n=4)
-        elseif order <= 4
-            return GaussQuadrature(ref, n=6)
+        # This orders contains points outside the
+        # reference triangle, so they can't be used
+        forbidden_orders = SVector(11, 15, 16, 18, 20)
+        if order ∉ forbidden_orders
+            return GaussQuadrature(ref, order)
         end
     end
     error("no appropriate quadrature rule found.")
@@ -125,4 +92,13 @@ Given an element type `E`, return an appropriate quadrature of order `order`.
 """
 function get_qrule_for_element(E, order)
     return get_qrule_for_reference_shape(getdomain(E), order)
+end
+
+@generated function 
+    get_qnodes_and_qweights(q::GaussQuadrature{<:ReferenceTriangle, O}) where {O}
+    element_name = "Triangle"
+    qrule_name = "Gauss$O"
+    x, w = get_qrule_from_gmsh(element_name, qrule_name)
+    @assert (length(x) == length(w)) && (length(x) > 0)
+    return :($x,$w)
 end

@@ -19,7 +19,7 @@ const TOL3 = 6e-4
         ELEM_ORDER = 1
         mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER, verbosity=false);
         
-        tolerances = [TOL1, TOL1, TOL1, TOL1]
+        tolerances = [TOL1 for _ in 1:QRULE_MAX_ORDER]
         for i in 1:QRULE_MAX_ORDER
             gquad = generate_globalquadrature(mesh, order=i);
             area = integrate(gquad, ftest)
@@ -31,7 +31,7 @@ const TOL3 = 6e-4
         ELEM_ORDER = 2
         mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER, verbosity=false);
 
-        tolerances = [TOL2, TOL3, TOL3, TOL3]
+        tolerances = [TOL2; [TOL3 for _ in 1:QRULE_MAX_ORDER-1]]
         for i in 1:QRULE_MAX_ORDER
             gquad = generate_globalquadrature(mesh, order=i);
             area = integrate(gquad, ftest)
@@ -52,7 +52,7 @@ end
         ELEM_ORDER = 1
         mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER, verbosity=false);
 
-        tolerances = [TOL1, TOL3, TOL3, TOL3]
+        tolerances = [TOL1; [TOL3 for _ in 1:QRULE_MAX_ORDER-1]]
         for i in 1:QRULE_MAX_ORDER
             gquad = generate_globalquadrature(mesh, order=i);
             charge = integrateflux(gquad, ftest)
@@ -64,7 +64,7 @@ end
         ELEM_ORDER = 2
         mesh = read_gmsh_geo(mesh_filename, h=HMAX, order=ELEM_ORDER, verbosity=false);
         
-        tolerances = [TOL2, TOL3, TOL3, TOL3]
+        tolerances = [TOL2; [TOL3 for _ in 1:QRULE_MAX_ORDER-1]]
         for i in 1:QRULE_MAX_ORDER
             gquad = generate_globalquadrature(mesh, order=i);
             charge = integrateflux(gquad, ftest)

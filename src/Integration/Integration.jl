@@ -13,6 +13,8 @@ using DensityInterpolationMethod.Mesh
 import DensityInterpolationMethod.Mesh: getdomain, 
                                         get_number_of_lnodes, 
                                         get_number_of_elements
+import DensityInterpolationMethod.IO: get_qrule_from_gmsh
+
 export 
     # Abstract types
     AbstractQuadratureRule,

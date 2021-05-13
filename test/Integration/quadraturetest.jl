@@ -8,7 +8,7 @@ import DensityInterpolationMethod.Integration: get_qrule_for_reference_shape
 include("../test_utils.jl")
 
 # Tolerances
-const TOL1 = 1e-14
+const TOL1 = 1e-10
 
 @testset "Quadrature rules in Reference Triangle" begin
     # Monomials
