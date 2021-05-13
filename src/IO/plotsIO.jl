@@ -4,8 +4,8 @@
 """
 
 """
-    surfacemeshplot(mesh:GenericMesh; npoints=5)
-    surfacemeshplot!(mesh:GenericMesh; npoints=5)
+    surfacemeshplot(mesh::GenericMesh; npoints=5)
+    surfacemeshplot!(mesh::GenericMesh; npoints=5)
 
 Function that plots the surface of each element of a mesh.
 It is possible that some elements may not be displayed properly, 
@@ -45,8 +45,8 @@ struct PlotElement end
 end
 
 """
-    meshplot(mesh:GenericMesh; centers=0, normals=0, tangents=0)
-    meshplot!(mesh:GenericMesh; centers=0, normals=0, tangents=0)
+    meshplot(mesh::GenericMesh; centers=0, normals=0, tangents=0)
+    meshplot!(mesh::GenericMesh; centers=0, normals=0, tangents=0)
 
 Function that plots the nodes of each element of a mesh. Optionally, it can plot
 the center, the normal vector and the tangent vectors of each element.

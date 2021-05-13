@@ -112,7 +112,6 @@ Returns `[l₁, ..., lₙ]`, where `lᵢ` is the list of element indices that ar
 """
 function find_neighboring_elements(mesh::GenericMesh)
     n_elements = get_number_of_elements(mesh)
-    n_lnodes = get_number_of_lnodes(mesh)
     # Find common-tags elements
     data = Dict{Int64, Vector{Int64}}()
     for (el_index, el) in enumerate(getelements(mesh))

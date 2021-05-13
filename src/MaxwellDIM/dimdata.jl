@@ -229,7 +229,6 @@ node with `j = qnode_index`.
 """
 function evaluate_γ₀interpolant(dimdata::DimData, element_index::Integer, qnode::QNode)
     k = dimdata.k              # wavenumber
-    qnode_index = qnode.index  # qnode global index
     x, _, _, n = get_qnode_data(qnode)
     # Density interpolant coefficients
     interpolant_coeff = get_interpolant_coeff(dimdata, element_index)   
@@ -273,7 +272,6 @@ node with `j = qnode_index`.
 """
 function evaluate_γ₁interpolant(dimdata::DimData, element_index::Integer, qnode::QNode)
     k = dimdata.k              # wavenumber
-    qnode_index = qnode.index  # qnode global index
     x, _, _, n = get_qnode_data(qnode)
     # Density interpolant coefficients
     interpolant_coeff = get_interpolant_coeff(dimdata, element_index)   

@@ -149,7 +149,6 @@ Computes the integral operator `C̃_{α,β}[ϕ]` at all quadrature points,
 using the density interpolation method.
 """
 function compute_integral_operator(dimdata::DimData)
-    n_nodes = get_number_of_qnodes(dimdata)
     # Set integral operator value to zero
     reset_integral_operator_value(dimdata)
     # Compute density interpolant for all elements

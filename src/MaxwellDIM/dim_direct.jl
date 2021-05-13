@@ -95,7 +95,7 @@ function _compute_integral_operator_integrand(dimdata::DirectDimData, element_in
     # qnode i data
     yi, _, _, ni = get_qnode_data(qnode_i)
     # qnode j data
-    yj, wj, _, nj = get_qnode_data(qnode_j)
+    yj, wj, _, _ = get_qnode_data(qnode_j)
     ϕj, φj = get_surface_density(dimdata, qnode_j)    # surf. dens. ϕ and φ at qnode j
     γ₀Φj = evaluate_γ₀interpolant(dimdata, element_index_i, qnode_j)   # interpolant γ₀Φ at qnode j
     γ₁Φj = evaluate_γ₁interpolant(dimdata, element_index_i, qnode_j)   # interpolant γ₁Φ at qnode j
@@ -109,7 +109,7 @@ end
 
 function _compute_potencial_integrand(dimdata::DirectDimData, qnode::QNode, x)
     k, α, β = getparameters(dimdata)
-    yj, wj, _, nj = get_qnode_data(qnode)   # qnode j data
+    yj, wj, _, _ = get_qnode_data(qnode)   # qnode j data
     ϕj, φj = get_surface_density(dimdata, qnode)    # surf. dens. ϕ and φ at qnode j
     # Double layer potencial
     K_input = α * ϕj
