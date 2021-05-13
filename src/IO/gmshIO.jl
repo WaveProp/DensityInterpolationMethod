@@ -109,3 +109,27 @@ function _generate_element(etype, tag2node, tags)
     return element
 end
 
+"""
+    get_qrule_from_gmsh(element_name, qrule_name)
+
+Returns the qnodes `x` and qweights `w` for a given `element_name` (e.g. "Triangle") 
+and `qrule_name` (e.g. "Gauss4"). This function calls the Gmsh API. 
+"""
+function get_qrule_from_gmsh(element_name, qrule_name)
+    gmsh.initialize()
+    # Order of the element, higher order elements
+    # should have the same qnodes and qweights.
+    order = 1    
+    etype = gmsh.model.mesh.getElementType(element_name, order)
+    x, w = gmsh.model.mesh.getIntegrationPoints(etype, qrule_name)
+    gmsh.finalize()
+    xdata, wdata = _reshape_qrule_data(x, w)
+    return xdata, wdata
+end
+function _reshape_qrule_data(x, w)
+    n_qnodes = length(w)
+    xmatrix = reshape(x, DIMENSION3, :)
+    xdata = SVector{n_qnodes}([Point2D(i[1], i[2]) for i in eachcol(xmatrix)])
+    wdata = SVector{n_qnodes}(w)
+    return xdata, wdata
+end
