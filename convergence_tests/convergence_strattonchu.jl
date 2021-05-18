@@ -51,7 +51,7 @@ end
 ##
 ELEM_ORDER = 2
 HMAX = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-QUADRATURE_ORDER = 6
+QUADRATURE_ORDER = 2
 k = 1     # Wavenumber
 n_src = 26  # number of Lebedev sources
 r_factor = 5  # radius factor for Lebedev sources

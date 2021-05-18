@@ -164,30 +164,31 @@ function compute_integral_operator(dimdata::DimData)
     # (i, j) correspond to the indices of the 
     # observation and source qnodes, respectively.
     Threads.@threads for i in get_qnode_indices(dimdata.gquad)
-        element_index_i = get_element_index(dimdata.gquad, i)
-        _compute_integral_operator_innerloop(dimdata, element_index_i, i)
+        _compute_integral_operator_innerloop(dimdata, i)
     end
     # Return integral op. value
     # at all quadrature points
     return dimdata.integral_op
 end
-function _compute_integral_operator_innerloop(dimdata::DimData, element_index_i, i)
+function _compute_integral_operator_innerloop(dimdata::DimData, i)
     qnode_i = get_qnode(dimdata.gquad, i)     # qnode i object
+    element_index_i = qnode_i.element_index   # element index of qnode i
     for j in get_outelement_qnode_indices(dimdata.gquad, element_index_i)
         qnode_j = get_qnode(dimdata.gquad, j)     # qnode j object
         # Update integral op. value at qnode i
         dimdata.integral_op[i] +=
-            _compute_integral_operator_integrand(dimdata, element_index_i, qnode_i, qnode_j)
+            _compute_integral_operator_integrand(dimdata, qnode_i, qnode_j)
     end
     # Interpolant γ₀Φ at qnode i
     γ₀Φi = evaluate_γ₀interpolant(dimdata, element_index_i, qnode_i)   
     # Update integral op. value at qnode i
     dimdata.integral_op[i] += -0.5*γ₀Φi
 end
-function _compute_integral_operator_integrand(dimdata::DimData, element_index_i, qnode_i, qnode_j)
+function _compute_integral_operator_integrand(dimdata::DimData, qnode_i, qnode_j)
     k, α, β = getparameters(dimdata)
     # qnode i data
     yi, _, _, ni = get_qnode_data(qnode_i)
+    element_index_i = qnode_i.element_index   # element index of qnode i
     # qnode j data
     yj, wj, _, nj = get_qnode_data(qnode_j)
     ϕj = get_surface_density(dimdata, qnode_j)           # surf. dens. ϕ at qnode j

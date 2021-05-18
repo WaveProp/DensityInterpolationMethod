@@ -90,10 +90,11 @@ function _apply_scaling_to_rhs!(dimdata::DirectDimData, Bvector)
     return
 end
 
-function _compute_integral_operator_integrand(dimdata::DirectDimData, element_index_i, qnode_i, qnode_j)
+function _compute_integral_operator_integrand(dimdata::DirectDimData, qnode_i, qnode_j)
     k, α, β = getparameters(dimdata)
     # qnode i data
     yi, _, _, ni = get_qnode_data(qnode_i)
+    element_index_i = qnode_i.element_index   # element index of qnode i
     # qnode j data
     yj, wj, _, _ = get_qnode_data(qnode_j)
     ϕj, φj = get_surface_density(dimdata, qnode_j)    # surf. dens. ϕ and φ at qnode j
