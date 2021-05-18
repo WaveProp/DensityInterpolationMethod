@@ -41,6 +41,12 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
 
     # Compute LQ and save matrices
     lqobject = lq!(Mmatrix)
+    size_Lmatrix = size(lqobject.L)
+    if size_Lmatrix[1] != size_Lmatrix[2]
+        @warn """ The `L` interpolant matrix is not square.
+        The number of sources of the interpolant is probably not enough.
+        """
+    end
     dimdata.Lmatrices[element_index] = LowerTriangular(lqobject.L)
     dimdata.Qmatrices[element_index] = Matrix(lqobject.Q)
 end

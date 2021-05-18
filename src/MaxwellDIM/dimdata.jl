@@ -27,7 +27,7 @@ regularized with the Density Interpolation Method.
 abstract type DirectDimFormulation <: AbstractDimFormulation end
 
 """
-    struct DimData
+    struct DimData{F<:AbstractDimFormulation}
 
 Structure that contains all necessary data
 for the Density Interpolation Method.
@@ -243,20 +243,21 @@ end
 
 
 """
-    evaluate_γ₀interpolant(dimdata::DimData, element_index, x̂)
+    evaluate_γ₀interpolant(dimdata::DimData, interpolant_element_index, target_element_index, x̂)
 
-Evaluates `γ₀Φₘ(y(x̂))`, where `Φₘ` is the density interpolant
-of element `eₘ` with `m = element_index`, `y` is the element parametrization
-and `x̂` is a 2D point in parametric coordinates.
+Evaluates `γ₀Φₘ(yₙ(x̂))`, where `Φₘ` is the density interpolant
+of element `eₘ` with `m = interpolant_element_index`, `yₙ` is the element 
+parametrization of element `n = target_element_index` and `x̂` is a 2D point 
+in parametric coordinates.  
 """
-function evaluate_γ₀interpolant(dimdata::DimData, element_index, x̂)
+function evaluate_γ₀interpolant(dimdata::DimData, interpolant_element_index, target_element_index, x̂)
     @assert length(x̂) == 2
     k = dimdata.k       # wavenumber
-    element = getelement(dimdata.mesh, element_index)
+    element = getelement(dimdata.mesh, target_element_index)
     node = element(x̂)
     normal = getnormal(element, x̂)
     # Density interpolant coefficients
-    ccoeff = get_interpolant_coeff(dimdata, element_index)   
+    ccoeff = get_interpolant_coeff(dimdata, interpolant_element_index)   
     return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
         single_layer_kernel(node, z, k, normal, c)
     end
@@ -285,20 +286,21 @@ function evaluate_γ₁interpolant(dimdata::DimData, element_index::Integer, qno
 end
 
 """
-    evaluate_γ₁interpolant(dimdata::DimData, element_index, x̂)
+    evaluate_γ₁interpolant(dimdata::DimData, interpolant_element_index, target_element_index, x̂)
 
-Evaluates `γ₁Φₘ(y(x̂))`, where `Φₘ` is the density interpolant
-of element `eₘ` with `m = element_index`,`y` is the element parametrization
-and `x̂` is a 2D point in parametric coordinates.
+Evaluates `γ₁Φₘ(yₙ(x̂))`, where `Φₘ` is the density interpolant
+of element `eₘ` with `m = interpolant_element_index`, `yₙ` is the element 
+parametrization of element `n = target_element_index` and `x̂` is a 2D point 
+in parametric coordinates. 
 """
-function evaluate_γ₁interpolant(dimdata::DimData, element_index, x̂)
+function evaluate_γ₁interpolant(dimdata::DimData, interpolant_element_index, target_element_index, x̂)
     @assert length(x̂) == 2
     k = dimdata.k       # wavenumber
-    element = getelement(dimdata.mesh, element_index)
+    element = getelement(dimdata.mesh, target_element_index)
     node = element(x̂)
     normal = getnormal(element, x̂)
     # Density interpolant coefficients
-    ccoeff = get_interpolant_coeff(dimdata, element_index)   
+    ccoeff = get_interpolant_coeff(dimdata, interpolant_element_index)   
     return sum(zip(dimdata.src_list, ccoeff)) do (z,c)
         double_layer_kernel(node, z, k, normal, c)
     end

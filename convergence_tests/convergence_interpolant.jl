@@ -34,8 +34,8 @@ function compute_element_error(dimdata, interpolant_element_index, target_elemen
         ϕ =  DM.single_layer_kernel(yi, src, k, normal, pol)
         αϕ = dimdata.α * ϕ
         βnϕ = dimdata.β * cross(normal, ϕ)
-        γ₀Φ = DM.evaluate_γ₀interpolant(dimdata, interpolant_element_index, node)
-        γ₁Φ = DM.evaluate_γ₁interpolant(dimdata, interpolant_element_index, node)
+        γ₀Φ = DM.evaluate_γ₀interpolant(dimdata, interpolant_element_index, target_element_index, node)
+        γ₁Φ = DM.evaluate_γ₁interpolant(dimdata, interpolant_element_index, target_element_index, node)
         error0 = max(error0, norm(αϕ - γ₀Φ))
         error1 = max(error1, norm(βnϕ - γ₁Φ))
         norm_αϕ = max(norm_αϕ, norm(αϕ))
@@ -59,8 +59,8 @@ function convergence_interpolant(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
 
     # Set the surface density `ϕ` equal to an electric dipole field
     # Field produced by electric dipole
-    src = Point3D(-0.1, 0.3, -0.2)    # dipole location
-    pol = Point3D(1, -1, 1)    # dipole polarization
+    src = Point3D(3, 3, 3)    # dipole location
+    pol = Point3D(1, 1, 1)    # dipole polarization
     γ₀Efields = similar(dimdata.gquad.qnodes, ComplexPoint3D)
     for i in eachindex(dimdata.gquad.qnodes)
         qnode = get_qnode(dimdata.gquad, i)
@@ -101,7 +101,7 @@ function convergence_interpolant(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
     error0_neighbor = 0.0
     error1_neighbor = 0.0
     for neighbor_index in neighbors[element_max_index]
-        error0_n, error1_n, _, _ = compute_element_error(dimdata, element_max_index, neighbor_index,k, src, pol, n_nodes_per_element)
+        error0_n, error1_n, _, _ = compute_element_error(dimdata, element_max_index, neighbor_index, k, src, pol, n_nodes_per_element)
         error0_neighbor = max(error0_neighbor, error0_n)
         error1_neighbor = max(error1_neighbor, error1_n)
     end
@@ -114,7 +114,7 @@ end
 ##
 ELEM_ORDER = 2
 HMAX = [0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-QUADRATURE_ORDER = 8
+QUADRATURE_ORDER = 6
 k = 1     # Wavenumber
 n_src = 26  # number of Lebedev sources
 r_factor = 5  # radius factor for Lebedev sources

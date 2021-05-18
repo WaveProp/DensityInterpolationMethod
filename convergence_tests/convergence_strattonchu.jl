@@ -26,8 +26,8 @@ function convergence_strattonchu(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
     DM.assemble_dim_matrices(dimdata)
 
     # Field produced by electric dipole
-    src = Point3D(-0.1, 0.3, -0.2)    # dipole location
-    pol = Point3D(1, -1, 1)    # dipole polarization    
+    src = Point3D(3, 3, 3)    # dipole location
+    pol = Point3D(1, 1, 1)    # dipole polarization  
     γ₀Efields = similar(dimdata.gquad.qnodes, ComplexPoint3D)
     γ₁Efields = similar(dimdata.gquad.qnodes, ComplexPoint3D)
     for i in eachindex(dimdata.gquad.qnodes)
@@ -40,7 +40,7 @@ function convergence_strattonchu(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
     DM.project_field_onto_surface_density(dimdata, γ₀Efields, γ₁Efields)
 
     # Error
-    result = 2 .* DM.compute_integral_operator(dimdata)
+    result = -2 .* DM.compute_integral_operator(dimdata)
     error_list = norm.(result.-γ₀Efields)/maximum(norm.(γ₀Efields))
     error_max = maximum(error_list)
     error_95 = quantile(error_list, 0.95)
@@ -51,7 +51,7 @@ end
 ##
 ELEM_ORDER = 2
 HMAX = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-QUADRATURE_ORDER = 8
+QUADRATURE_ORDER = 6
 k = 1     # Wavenumber
 n_src = 26  # number of Lebedev sources
 r_factor = 5  # radius factor for Lebedev sources
