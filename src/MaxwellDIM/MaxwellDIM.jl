@@ -26,4 +26,5 @@ include("maxwell.jl")
 include("dimdata.jl")
 include("dim.jl")
 include("dim_direct.jl")
+include("integraloperators.jl")
 end

@@ -72,14 +72,15 @@ function notimplemented()
 end
 
 """
-    abstractmethod
+    abstractmethod(T)
 
 A method of an `abstract type` for which concrete subtypes are expected
 to provide an implementation.
 """
-function abstractmethod(T)
+function abstractmethod(T::Type)
     error("this method needs to be implemented by the concrete subtype $T.")
 end
+abstractmethod(T) = abstractmethod(typeof(T))
 
 """
     assert_extension(fname,ext,[msg])

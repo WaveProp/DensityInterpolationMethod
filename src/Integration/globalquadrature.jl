@@ -205,6 +205,17 @@ function get_outelement_qnode_indices(gquad::GlobalQuadrature, element_index::In
     return iterator
 end
 
+"""
+    is_qnode_in_element(gquad::GlobalQuadrature, qnode_index, element_index)
+
+Returns `true` if `qnode_index` belongs to element `element_index`, otherwise
+returns `false`.
+"""
+function is_qnode_in_element(gquad::GlobalQuadrature, qnode_index, element_index)
+    inelement_qnodes = get_inelement_qnode_indices(gquad, element_index)
+    return qnode_index ∈ inelement_qnodes
+end
+
 """ 
     compute_bounding_box(gquad::GlobalQuadrature)
 

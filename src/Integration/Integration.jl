@@ -36,6 +36,7 @@ export
     get_element_index,
     get_inelement_qnode_indices,
     get_outelement_qnode_indices,
+    is_qnode_in_element,
     compute_bounding_box
 
 include("quadrature.jl")
