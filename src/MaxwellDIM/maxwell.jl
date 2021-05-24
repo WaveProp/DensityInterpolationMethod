@@ -3,6 +3,11 @@ Definition of Green tensor and utility functions
 for Maxwell's equations.
 """
 
+const MaxwellKernelType = SMatrix{DIMENSION3, DIMENSION3, 
+                                  ComplexF64, DIMENSION3*DIMENSION3}
+const ReducedMaxwellKernelType = SMatrix{DIMENSION3, DIMENSION2, 
+                                         ComplexF64, DIMENSION3*DIMENSION2}
+
 """
     _helmholtz_green_function(r, k)
 

@@ -59,6 +59,8 @@ struct DimData{F<:AbstractDimFormulation}
     # for each element.
     Lmatrices::Vector{LowerTriangular{ComplexF64, Matrix{ComplexF64}}}
     Qmatrices::Vector{Matrix{ComplexF64}}
+    # Θ matrices for fast evaluation of the interpolant `Φ`, for each qnode.
+    Θmatrices::Vector{Vector{MaxwellKernelType}}
     # List of source points for constructing the
     # density interpolant `Φ`.
     src_list::Vector{Point3D}
@@ -113,8 +115,9 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     integral_op = Vector{ComplexPoint3D}(undef, n_qnodes)
     Lmatrices = [LowerTriangular(Matrix{ComplexF64}(undef, 0, 0)) for _ in 1:n_elements]
     Qmatrices = [Matrix{ComplexF64}(undef, 0, 0) for _ in 1:n_elements]
+    Θmatrices = [Vector{MaxwellKernelType}(undef, n_src) for _ in 1:n_qnodes]
     # compute source points
-    bbox, bbox_center, bbox_radius = compute_bounding_box(gquad)
+    _, bbox_center, bbox_radius = compute_bounding_box(gquad)
     src_radius = r * bbox_radius
     src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
     # reinterpreted data
@@ -132,7 +135,7 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
         Formulation = DirectDimData
     end
     return Formulation(hmax, mesh, gquad, k, α, β, density_coeff, density2_coeff, interpolant_coeff, integral_op,
-                   Lmatrices, Qmatrices, src_list, density_coeff_data, density2_coeff_data, interpolant_coeff_data)
+                   Lmatrices, Qmatrices, Θmatrices, src_list, density_coeff_data, density2_coeff_data, interpolant_coeff_data)
 end
 
 """
@@ -154,6 +157,17 @@ with `j = element_index`.
 function get_interpolant_coeff(dimdata::DimData, element_index)
     return dimdata.interpolant_coeff[element_index]
 end
+
+"""
+    get_interpolant_correction_matrices(dimdata::DimData, qnode_index)
+
+Returns the correction matrices Θᵢ for qnode `i = qnode_index`.
+"""
+function get_interpolant_correction_matrices(dimdata::DimData, qnode_index)
+    return dimdata.Θmatrices[qnode_index]
+end
+
+
 
 """
     get_number_of_qnodes(dimdata::DimData)

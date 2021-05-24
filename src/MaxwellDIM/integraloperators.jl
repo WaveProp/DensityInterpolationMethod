@@ -1,13 +1,9 @@
-
-const MaxwellKernelType = SMatrix{DIMENSION3, DIMENSION3, 
-                                  ComplexF64, DIMENSION3*DIMENSION3}
-
-function evaluate_combined_operator(dimdata::DimData, cK, cT, qnode_index_i, qnode_index_j) 
+function evaluate_single_and_double_layer_operators(dimdata::DimData, qnode_index_i, qnode_index_j) 
     qnode_i = get_qnode(dimdata.gquad, qnode_index_i)   # qnode i object
-    element_index_i = qnode_i.element_index                 # element index of qnode i
+    element_index_i = qnode_i.element_index             # element index of qnode i
     if is_qnode_in_element(dimdata.gquad, qnode_index_j, element_index_i)
         # if qnode_j belongs to element_index_i, return zero
-        return zero(MaxwellKernelType)
+        return zero(MaxwellKernelType), zero(MaxwellKernelType)
     end
     # wavenumber
     k, _, _ = getparameters(dimdata)    
@@ -20,37 +16,73 @@ function evaluate_combined_operator(dimdata::DimData, cK, cT, qnode_index_i, qno
     Toperator = single_layer_kernel(yi, yj, k, ni)   
     # double layer operator
     Koperator = double_layer_kernel(yi, yj, k, ni)   
-    return wj*(cK*Koperator + cT*Toperator)
+    return wj*Toperator, wj*Koperator
 end
 
 function evaluate_single_layer_operator(dimdata::DimData, qnode_index_i, qnode_index_j) 
-    cK, cT = 0, 1
-    return evaluate_combined_operator(dimdata::DimData, cK, cT, qnode_index_i, qnode_index_j) 
+    SL, _ = evaluate_single_and_double_layer_operators(dimdata, qnode_index_i, qnode_index_j) 
+    return SL
 end
 
 function evaluate_double_layer_operator(dimdata::DimData, qnode_index_i, qnode_index_j) 
-    cK, cT = 1, 0
-    return evaluate_combined_operator(dimdata::DimData, cK, cT, qnode_index_i, qnode_index_j) 
+    _, DL = evaluate_single_and_double_layer_operators(dimdata, qnode_index_i, qnode_index_j) 
+    return DL
 end
 
-abstract type IntegralOperator{T} <: AbstractMatrix{T} end
-function Base.size(iop::IntegralOperator)
+function evaluate_combined_layer_operator(dimdata::DimData, qnode_index_i, qnode_index_j) 
+    _, α, β = getparameters(dimdata)
+    SL, DL = evaluate_single_and_double_layer_operators(dimdata, qnode_index_i, qnode_index_j) 
+    # qnode j data
+    qnode_j = get_qnode(dimdata.gquad, qnode_index_j)  
+    _, _, jacⱼ, nⱼ = get_qnode_data(qnode_j)
+    nⱼcross = cross_product_matrix(nⱼ)
+    CL = (α*DL + β*SL*nⱼcross)*jacⱼ
+    return CL
+end
+
+function evaluate_interpolant_forwardmap(dimdata::DimData, qnode_index_i)
+    qnode_i = get_qnode(dimdata.gquad, qnode_index_i)   # qnode i object
+    element_index_i = qnode_i.element_index             # element index of qnode i
+    # interpolant coefficients of element i
+    interpolant_coeff = get_interpolant_coeff(dimdata, element_index_i) 
+    # interpolant correction matrices of qnode i
+    Θᵢ = get_interpolant_correction_matrices(dimdata, qnode_index_i)
+    @assert length(Θᵢ) == length(interpolant_coeff)     # sanity check
+    return sum(eachindex(interpolant_coeff)) do l
+        Θᵢ[l] * interpolant_coeff[l]
+    end
+end
+
+abstract type AbstractIntegralOperator{T, N} <: AbstractArray{T, N} end
+function Base.size(iop::AbstractIntegralOperator{T, N}) where {T, N}
     n_qnodes = get_number_of_qnodes(iop.dimdata)
-    return (n_qnodes, n_qnodes)
+    return ntuple(_ -> n_qnodes, N)
 end
-Base.getindex(iop::IntegralOperator, ::Integer, ::Integer) = abstractmethod(iop)
 
-struct SingleLayerOperator <: IntegralOperator{MaxwellKernelType}
+abstract type AbstractIntegralVectorOperator{T} <: AbstractIntegralOperator{T, 1} end
+abstract type AbstractIntegralMatrixOperator{T} <: AbstractIntegralOperator{T, 2} end
+
+struct SingleLayerOperator <: AbstractIntegralMatrixOperator{MaxwellKernelType}
     dimdata::IndirectDimData
 end
 Base.getindex(iop::SingleLayerOperator, i::Integer, j::Integer) = evaluate_single_layer_operator(iop.dimdata, i, j)
 
-struct DoubleLayerOperator <: IntegralOperator{MaxwellKernelType}
+struct DoubleLayerOperator <: AbstractIntegralMatrixOperator{MaxwellKernelType}
     dimdata::IndirectDimData
 end
 Base.getindex(iop::DoubleLayerOperator, i::Integer, j::Integer) = evaluate_double_layer_operator(iop.dimdata, i, j)
 
-function compute_correction_matrix(dimdata::IndirectDimData)
+struct CombinedLayerOperator <: AbstractIntegralMatrixOperator{ReducedMaxwellKernelType}
+    dimdata::IndirectDimData
+end
+Base.getindex(iop::CombinedLayerOperator, i::Integer, j::Integer) = evaluate_combined_layer_operator(iop.dimdata, i, j)
+
+struct InterpolantOperator <: AbstractIntegralVectorOperator{ComplexPoint3D}
+    dimdata::IndirectDimData
+end
+Base.getindex(iop::InterpolantOperator, i::Integer) = evaluate_interpolant_forwardmap(iop.dimdata, i)
+
+function compute_correction_matrix!(dimdata::IndirectDimData)
     n_qnodes = get_number_of_qnodes(dimdata)
     n_sources = get_number_of_srcs(dimdata)
     # Assemble auxiliary matrices
@@ -64,7 +96,7 @@ function compute_correction_matrix(dimdata::IndirectDimData)
     K = DoubleLayerOperator(dimdata)
     # Compute correction matrix
     Θmatrix = -0.5*Bmatrix - K*Bmatrix - T*Cmatrix
-    return Θmatrix
+    _compute_correction_matrix_store_matrix!(dimdata, Θmatrix)
 end
 function _compute_correction_matrix_auxiliary_matrices!(dimdata::IndirectDimData, Bmatrix, Cmatrix)
     n_qnodes = get_number_of_qnodes(dimdata)
@@ -80,3 +112,16 @@ function _compute_correction_matrix_auxiliary_matrices!(dimdata::IndirectDimData
         end
     end
 end  
+function _compute_correction_matrix_store_matrix!(dimdata::IndirectDimData, Θmatrix)
+    # Store rows of Θmatrix in dimdata
+    n_qnodes = get_number_of_qnodes(dimdata)
+    n_sources = get_number_of_srcs(dimdata)
+    for i in 1:n_qnodes
+        # interpolant correction matrices
+        # of qnode i
+        Θᵢ = get_interpolant_correction_matrices(dimdata, i)
+        for l in 1:n_sources
+            Θᵢ[l] = Θmatrix[i, l]
+        end
+    end
+end
