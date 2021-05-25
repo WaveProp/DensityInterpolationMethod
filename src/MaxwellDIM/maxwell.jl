@@ -7,6 +7,8 @@ const MaxwellKernelType = SMatrix{DIMENSION3, DIMENSION3,
                                   ComplexF64, DIMENSION3*DIMENSION3}
 const ReducedMaxwellKernelType = SMatrix{DIMENSION3, DIMENSION2, 
                                          ComplexF64, DIMENSION3*DIMENSION2}
+const ReducedReducedMaxwellKernelType = SMatrix{DIMENSION2, DIMENSION2, 
+                                                ComplexF64, DIMENSION2*DIMENSION2}
 
 """
     _helmholtz_green_function(r, k)
