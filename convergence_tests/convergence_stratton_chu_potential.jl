@@ -37,17 +37,17 @@ function convergence_potential(eval_pts, ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, 
 
     # Get γ₀
     println("gamma 0")
-    DM.project_field_onto_surface_density(dimdata, γ₀Efields, γ₁Efields)
-    γ₀approx = 2 .* DM.compute_integral_operator(dimdata)
+    DM.project_field_onto_surface_density!(dimdata, γ₀Efields, γ₁Efields)
+    γ₀approx = 2 .* DM.compute_integral_operator!(dimdata)
 
     # Get γ₁
     println("gamma 1")
-    DM.project_field_onto_surface_density(dimdata, γ₁Efields, k^2 .* γ₀Efields)
-    γ₁approx = 2 .* DM.compute_integral_operator(dimdata)
+    DM.project_field_onto_surface_density!(dimdata, γ₁Efields, k^2 .* γ₀Efields)
+    γ₁approx = 2 .* DM.compute_integral_operator!(dimdata)
     
     # Error
     println("potential")
-    DM.project_field_onto_surface_density(dimdata, γ₀approx, γ₁approx)
+    DM.project_field_onto_surface_density!(dimdata, γ₀approx, γ₁approx)
     E_exact = [DM.electric_dipole_electric_field(x, src, k, pol) for x in eval_pts]
     E_approx = DM.compute_potencial(dimdata, eval_pts)
     error = maximum(norm.(E_exact-E_approx))/maximum(norm.(E_exact))

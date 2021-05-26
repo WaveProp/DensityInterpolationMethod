@@ -22,12 +22,10 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
     src_list = dimdata.src_list      # list of interpolant source points
     n_qnodes = length(qnode_list)    # number of qnodes
     n_src = length(src_list)         # number of src points
-
     # Initialize matrix
     # 4 equations per qnode
     # 3 unknowns per src point
     Mmatrix = Matrix{ComplexF64}(undef, 4*n_qnodes, 3*n_src) 
-
     # Assemble system
     # `r_index` is the (local) qnode index
     #  `l_index` is the src index
@@ -38,7 +36,6 @@ function assemble_dim_matrices(dimdata::DimData, element_index)
             _assemble_submatrix!(dimdata, Mmatrix, qnode, src, n_qnodes, r_index, l_index) 
         end
     end
-
     # Compute LQ and save matrices
     lqobject = lq!(Mmatrix)
     size_Lmatrix = size(lqobject.L)
@@ -60,12 +57,11 @@ function _assemble_submatrix!(dimdata::DimData, Mmatrix, qnode, src, n_qnodes, r
     M1submatrix = -transpose(jac) *
                   cross_product_matrix(n) * 
                   double_layer_kernel(x, src, k, n)  
-
     # Initial indices (i, j)
     initial_i0 = 2*r_index - 1              # for M0
     initial_i1 = initial_i0 + 2*n_qnodes    # for M1
     initial_j = 3*l_index - 2               # for both M0 and M1
-
+    # copy M0submatrix and M1submatrix to Mmatrix
     index_j = initial_j
     for j in 1:3
         index_i0 = initial_i0
@@ -81,28 +77,26 @@ function _assemble_submatrix!(dimdata::DimData, Mmatrix, qnode, src, n_qnodes, r
 end
 
 """
-    compute_density_interpolant(dimdata::DimData)
-    compute_density_interpolant(dimdata::DimData, element_index)
+    compute_density_interpolant!(dimdata::DimData)
+    compute_density_interpolant!(dimdata::DimData, element_index)
 
 Computes the Density Interpolant coefficients, for each element
 in `dimdata`. This assumes that [`assemble_dim_matrices`](@ref) has already
 been called.
 """
-function compute_density_interpolant(dimdata::DimData)
+function compute_density_interpolant!(dimdata::DimData)
     # Compute DIM matrices for each element
     for element_index in get_element_indices(dimdata.gquad) 
-        compute_density_interpolant(dimdata, element_index)
+        compute_density_interpolant!(dimdata, element_index)
     end
 end
-function compute_density_interpolant(dimdata::DimData, element_index)
+function compute_density_interpolant!(dimdata::DimData, element_index)
     # Get data
     qnode_list = get_qnodes(dimdata.gquad, element_index)   # list of qnodes in element
     n_qnodes = length(qnode_list)  # number of qnodes in element
-
     # Initialize RHS vector
     # 4 equations per qnode
     Bvector = Vector{ComplexF64}(undef, 4*n_qnodes)
-
     # Assemble RHS
     # `r_index` is the (local) qnode index
     for r_index in 1:n_qnodes
@@ -110,7 +104,6 @@ function compute_density_interpolant(dimdata::DimData, element_index)
         _assemble_rhs!(dimdata, Bvector, qnode, r_index)
     end
     _apply_scaling_to_rhs!(dimdata, Bvector)
-
     # Solve system using LQ decomposition
     # and save solution
     _solve_dim_lq!(dimdata, Bvector, element_index)
@@ -149,28 +142,27 @@ function _solve_dim_lq!(dimdata::DimData, Bvector, element_index)
 end
 
 """
-    compute_integral_operator(dimdata::DimData)
+    compute_integral_operator!(dimdata::DimData)
 
 Computes the integral operator `C̃_{α,β}[ϕ]` at all quadrature points,
 using the density interpolation method.
 """
-function compute_integral_operator(dimdata::DimData)
+function compute_integral_operator!(dimdata::DimData)
     # Set integral operator value to zero
-    reset_integral_operator_value(dimdata)
+    reset_integral_operator_value!(dimdata)
     # Compute density interpolant for all elements
-    compute_density_interpolant(dimdata)
-
+    compute_density_interpolant!(dimdata)
     # Loop for computing the integral operator.
     # (i, j) correspond to the indices of the 
     # observation and source qnodes, respectively.
     Threads.@threads for i in get_qnode_indices(dimdata.gquad)
-        _compute_integral_operator_innerloop(dimdata, i)
+        _compute_integral_operator_innerloop!(dimdata, i)
     end
     # Return integral op. value
     # at all quadrature points
     return dimdata.integral_op
 end
-function _compute_integral_operator_innerloop(dimdata::DimData, i)
+function _compute_integral_operator_innerloop!(dimdata::DimData, i)
     qnode_i = get_qnode(dimdata.gquad, i)     # qnode i object
     element_index_i = qnode_i.element_index   # element index of qnode i
     for j in get_outelement_qnode_indices(dimdata.gquad, element_index_i)
@@ -194,7 +186,7 @@ function _compute_integral_operator_integrand(dimdata::DimData, qnode_i, qnode_j
     ϕj = get_surface_density(dimdata, qnode_j)           # surf. dens. ϕ at qnode j
     γ₀Φj = evaluate_γ₀interpolant(dimdata, element_index_i, qnode_j)   # interpolant γ₀Φ at qnode j
     γ₁Φj = evaluate_γ₁interpolant(dimdata, element_index_i, qnode_j)   # interpolant γ₁Φ at qnode j
-
+    # operators
     K_input = α*ϕj - γ₀Φj               # Double layer input vector
     T_input = β*cross(nj, ϕj) - γ₁Φj    # Single layer input vector
     K = double_layer_kernel(yi, yj, k, ni, K_input)   # Double layer operator

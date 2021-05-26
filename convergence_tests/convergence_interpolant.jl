@@ -68,8 +68,8 @@ function convergence_interpolant(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
         γ₀Efields[i] = DM.single_layer_kernel(yi, src, k, ni, pol)
     end
     # Project fields in each DimData
-    DM.project_field_onto_surface_density(dimdata, γ₀Efields)
-    DM.compute_density_interpolant(dimdata)
+    DM.project_field_onto_surface_density!(dimdata, γ₀Efields)
+    DM.compute_density_interpolant!(dimdata)
 
     # Sample nodes
     n_nodes = 5000   # nodes in mesh

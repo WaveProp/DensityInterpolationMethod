@@ -33,7 +33,7 @@ function convergence_potential(eval_pts, ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, 
         γ₁Efields[i] = DM.double_layer_kernel(yi, src, k, ni, pol)
     end
     # Project fields in each DimData
-    DM.project_field_onto_surface_density(dimdata, γ₀Efields, γ₁Efields)
+    DM.project_field_onto_surface_density!(dimdata, γ₀Efields, γ₁Efields)
 
     # Error
     E_exact = [DM.electric_dipole_electric_field(x, src, k, pol) for x in eval_pts]

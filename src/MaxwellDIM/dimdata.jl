@@ -188,11 +188,11 @@ function get_number_of_srcs(dimdata::DimData)
 end
 
 """
-    reset_integral_operator_value(dimdata::DimData)
+    reset_integral_operator_value!(dimdata::DimData)
     
 Sets to zero the value of the integral operator `dimdata.integral_op`.
 """
-function reset_integral_operator_value(dimdata::DimData)
+function reset_integral_operator_value!(dimdata::DimData)
     fill!(dimdata.integral_op, zero(eltype(dimdata.integral_op)))
 end
 
@@ -217,13 +217,13 @@ function get_surface_density(dimdata::DimData, qnode_index::Integer)
 end
 
 """
-    project_field_onto_surface_density(dimdata::DimData, field)
+    project_field_onto_surface_density!(dimdata::DimData, field)
 
 Projects the tangential component of a vector field `field`, 
 defined on the quadrature nodes, onto the surface density `ϕ`.
 The new surface density components are stored in `dimdata.density_coeff`.
 """
-function project_field_onto_surface_density(dimdata::DimData, field)
+function project_field_onto_surface_density!(dimdata::DimData, field)
     @assert length(field) == get_number_of_qnodes(dimdata)
     for i in get_qnode_indices(dimdata.gquad)
         vec = field[i]                      # vector field at qnode i

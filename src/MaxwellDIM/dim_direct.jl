@@ -19,12 +19,12 @@ function get_surface_density(dimdata::DirectDimData, qnode::QNode)
 end
 
 """
-    project_field_onto_surface_density(dimdata::DirectDimData, Kfield, Tfield)
+    project_field_onto_surface_density!(dimdata::DirectDimData, Kfield, Tfield)
 
 Projects the tangential component of a vector field `field`, 
 defined on the quadrature nodes, onto the surface densities `ϕ` and `φ`.
 """
-function project_field_onto_surface_density(dimdata::DirectDimData, Kfield, Tfield)
+function project_field_onto_surface_density!(dimdata::DirectDimData, Kfield, Tfield)
     @assert length(Kfield) == length(Tfield) == get_number_of_qnodes(dimdata)
     for i in get_qnode_indices(dimdata.gquad)
         Kvec = Kfield[i]                    # Kvector field at qnode i

@@ -37,7 +37,7 @@ println("Computing DIM matrices...")
 DM.assemble_dim_matrices(dimdata)
 println("Done")
 println("Computing density interpolant...")
-DM.compute_density_interpolant(dimdata)
+DM.compute_density_interpolant!(dimdata)
 println("Done")
 
 # Reference triangle sampling

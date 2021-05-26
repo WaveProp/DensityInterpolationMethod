@@ -37,10 +37,10 @@ function convergence_strattonchu(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
         γ₁Efields[i] = DM.double_layer_kernel(yi, src, k, ni, pol)
     end
     # Project fields in each DimData
-    DM.project_field_onto_surface_density(dimdata, γ₀Efields, γ₁Efields)
+    DM.project_field_onto_surface_density!(dimdata, γ₀Efields, γ₁Efields)
 
     # Error
-    result = -2 .* DM.compute_integral_operator(dimdata)
+    result = -2 .* DM.compute_integral_operator!(dimdata)
     error_list = norm.(result.-γ₀Efields)/maximum(norm.(γ₀Efields))
     error_max = maximum(error_list)
     error_95 = quantile(error_list, 0.95)
