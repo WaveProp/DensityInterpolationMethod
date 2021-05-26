@@ -1,34 +1,34 @@
-abstract type AbstractInteriorExteriorFormulation end
-abstract type NoneFormulation <: AbstractInteriorExteriorFormulation end
-abstract type ExteriorFormulation <: AbstractInteriorExteriorFormulation end
-abstract type InteriorFormulation <: AbstractInteriorExteriorFormulation end
-const FormulationType = Type{<:AbstractInteriorExteriorFormulation}
+abstract type AbstractNystromFormulation end
+abstract type NoneNystromFormulation <: AbstractNystromFormulation end
+abstract type ExteriorNystromFormulation <: AbstractNystromFormulation end
+abstract type InteriorNystromFormulation <: AbstractNystromFormulation end
+const NystromFormulationType = Type{<:AbstractNystromFormulation}
 
-function evaluate_single_and_double_layer_operators(dimdata::DimData, formtype::FormulationType, 
+function evaluate_single_and_double_layer_operators(dimdata::DimData, formtype::NystromFormulationType, 
                                                      qnode_index_i, qnode_index_j) 
     qnode_i = get_qnode(dimdata.gquad, qnode_index_i)   # qnode i object
     element_index_i = qnode_i.element_index             # element index of qnode i
-    if is_qnode_in_element(dimdata.gquad, qnode_index_j, element_index_i)
-        # if qnode j doesn't belong to the element of qnode i,
-        # then the single layer operator (Toperator) is zero
+    if qnode_index_i == qnode_index_j
+        # the single layer operator (Toperator) is zero
+        # and the quadrature weigth (wj) is not used (set to unity)
         Toperator = zero(MaxwellKernelType)
-        if formtype == NoneFormulation
-            # the double layer operator (Koperator) is zero
-            # and the quadrature weigth is not relevant
+        wj = 1
+        # the double layer operator (Koperator) depends on
+        # the formulation type (None, Exterior, Interior)
+        if formtype == NoneNystromFormulation
             Koperator = zero(MaxwellKernelType)
-            wj = 1
-        else
-            # retrieve quadrature weigth from qnode j,
-            # the double layer operator (Koperator) is ±0.5I,
-            # depending on whether the problem is exterior or interior
-            qnode_j = get_qnode(dimdata.gquad, qnode_index_j) 
-            _, wj, _, _ = get_qnode_data(qnode_j)
-            if formtype == ExteriorFormulation
-                Koperator = MaxwellKernelType(0.5*I)
-            elseif formtype == InteriorFormulation
-                Koperator = MaxwellKernelType(-0.5*I)
-            end
+        elseif formtype == ExteriorNystromFormulation
+            Koperator = MaxwellKernelType(0.5*I)
+        elseif formtype == InteriorNystromFormulation
+            Koperator = MaxwellKernelType(-0.5*I)
         end
+    elseif is_qnode_in_element(dimdata.gquad, qnode_index_j, element_index_i)
+        # both the single layer operator (Toperator) and the
+        # double layer operator (Koperator) are zero
+        # and the quadrature weigth (wj) is not relevant (set to unity)
+        Toperator = zero(MaxwellKernelType)
+        Koperator = zero(MaxwellKernelType)
+        wj = 1
     else
         # wavenumber
         k, _, _ = getparameters(dimdata)    
@@ -47,16 +47,16 @@ function evaluate_single_and_double_layer_operators(dimdata::DimData, formtype::
 end
 
 function evaluate_single_layer_operator(dimdata::DimData, qnode_index_i, qnode_index_j) 
-    SL, _ = evaluate_single_and_double_layer_operators(dimdata, NoneFormulation, qnode_index_i, qnode_index_j) 
+    SL, _ = evaluate_single_and_double_layer_operators(dimdata, NoneNystromFormulation, qnode_index_i, qnode_index_j) 
     return SL
 end
 
-function evaluate_double_layer_operator(dimdata::DimData, formtype::FormulationType, qnode_index_i, qnode_index_j) 
+function evaluate_double_layer_operator(dimdata::DimData, formtype::NystromFormulationType, qnode_index_i, qnode_index_j) 
     _, DL = evaluate_single_and_double_layer_operators(dimdata, formtype, qnode_index_i, qnode_index_j) 
     return DL
 end
 
-function evaluate_combined_layer_operator(dimdata::DimData, formtype::FormulationType, qnode_index_i, qnode_index_j) 
+function evaluate_combined_layer_operator(dimdata::DimData, formtype::NystromFormulationType, qnode_index_i, qnode_index_j) 
     _, α, β = getparameters(dimdata)
     SL, DL = evaluate_single_and_double_layer_operators(dimdata, formtype, qnode_index_i, qnode_index_j) 
     # qnode j data
@@ -67,12 +67,12 @@ function evaluate_combined_layer_operator(dimdata::DimData, formtype::Formulatio
     return CL
 end
 
-function evaluate_nystrom_maxwell_operator(dimdata::DimData, formtype::FormulationType, qnode_index_i, qnode_index_j)
-    # combined layer operator
-    CL = evaluate_combined_layer_operator(dimdata, formtype, qnode_index_i, qnode_index_j) 
+function evaluate_nystrom_maxwell_operator(dimdata::DimData, formtype::NystromFormulationType, qnode_index_i, qnode_index_j)
     # qnode i data
     qnode_i = get_qnode(dimdata.gquad, qnode_index_i)  
     _, _, jacᵢ, _ = get_qnode_data(qnode_i) 
+    # combined layer operator
+    CL = evaluate_combined_layer_operator(dimdata, formtype, qnode_index_i, qnode_index_j) 
     return transpose(jacᵢ)*CL
 end
 
@@ -107,31 +107,31 @@ struct SingleLayerOperator <: AbstractIntegralMatrixOperator{MaxwellKernelType}
 end
 Base.getindex(iop::SingleLayerOperator, i::Integer, j::Integer) = evaluate_single_layer_operator(iop.dimdata, i, j)
 
-struct _DoubleLayerOperator{F<:AbstractInteriorExteriorFormulation} <: AbstractIntegralMatrixOperator{MaxwellKernelType}
+struct _DoubleLayerOperator{F<:AbstractNystromFormulation} <: AbstractIntegralMatrixOperator{MaxwellKernelType}
     dimdata::IndirectDimData
 end
-const DoubleLayerOperator = _DoubleLayerOperator{NoneFormulation}
-const ExteriorDoubleLayerOperator = _DoubleLayerOperator{ExteriorFormulation}
-const InteriorDoubleLayerOperator = _DoubleLayerOperator{InteriorFormulation}
+const DoubleLayerOperator = _DoubleLayerOperator{NoneNystromFormulation}
+const ExteriorDoubleLayerOperator = _DoubleLayerOperator{ExteriorNystromFormulation}
+const InteriorDoubleLayerOperator = _DoubleLayerOperator{InteriorNystromFormulation}
 Base.getindex(iop::_DoubleLayerOperator{F}, i::Integer, j::Integer) where F = evaluate_double_layer_operator(iop.dimdata, F, i, j)
 
-struct _CombinedLayerOperator{F<:AbstractInteriorExteriorFormulation} <: AbstractIntegralMatrixOperator{ReducedMaxwellKernelType}
+struct _CombinedLayerOperator{F<:AbstractNystromFormulation} <: AbstractIntegralMatrixOperator{ReducedMaxwellKernelType}
     dimdata::IndirectDimData
 end
-const CombinedLayerOperator = _CombinedLayerOperator{NoneFormulation}
-const ExteriorCombinedLayerOperator = _CombinedLayerOperator{ExteriorFormulation}
-const InteriorCombinedLayerOperator = _CombinedLayerOperator{InteriorFormulation}
+const CombinedLayerOperator = _CombinedLayerOperator{NoneNystromFormulation}
+const ExteriorCombinedLayerOperator = _CombinedLayerOperator{ExteriorNystromFormulation}
+const InteriorCombinedLayerOperator = _CombinedLayerOperator{InteriorNystromFormulation}
 Base.getindex(iop::_CombinedLayerOperator{F}, i::Integer, j::Integer) where F = evaluate_combined_layer_operator(iop.dimdata, F, i, j)
 
-struct _NystromMaxwellOperator{F<:AbstractInteriorExteriorFormulation} <: AbstractIntegralMatrixOperator{ReducedReducedMaxwellKernelType}
+struct _NystromMaxwellOperator{F<:AbstractNystromFormulation} <: AbstractIntegralMatrixOperator{ReducedReducedMaxwellKernelType}
     dimdata::IndirectDimData
 end
-const NystromMaxwellOperator = _NystromMaxwellOperator{NoneFormulation}
-const InteriorNystromMaxwellOperator = _NystromMaxwellOperator{InteriorFormulation}
-const ExteriorNystromMaxwellOperator = _NystromMaxwellOperator{ExteriorFormulation}
+const NystromMaxwellOperator = _NystromMaxwellOperator{NoneNystromFormulation}
+const InteriorNystromMaxwellOperator = _NystromMaxwellOperator{InteriorNystromFormulation}
+const ExteriorNystromMaxwellOperator = _NystromMaxwellOperator{ExteriorNystromFormulation}
 Base.getindex(iop::_NystromMaxwellOperator{F}, i::Integer, j::Integer) where F = evaluate_nystrom_maxwell_operator(iop.dimdata, F, i, j)
 
-function compute_correction_matrix!(dimdata::IndirectDimData)
+function compute_correction_matrices!(dimdata::IndirectDimData)
     n_qnodes = get_number_of_qnodes(dimdata)
     n_sources = get_number_of_srcs(dimdata)
     # Assemble auxiliary matrices
@@ -139,15 +139,15 @@ function compute_correction_matrix!(dimdata::IndirectDimData)
     # [C]_{i, l} = γ₁G(yᵢ, zₗ) 
     Bmatrix = Matrix{MaxwellKernelType}(undef, n_qnodes, n_sources)
     Cmatrix = Matrix{MaxwellKernelType}(undef, n_qnodes, n_sources)
-    _compute_correction_matrix_auxiliary_matrices!(dimdata, Bmatrix, Cmatrix)
+    _compute_correction_matrices_auxiliary_matrices!(dimdata, Bmatrix, Cmatrix)
     # Single and double layer operators
     T = SingleLayerOperator(dimdata)
     K = DoubleLayerOperator(dimdata)
     # Compute correction matrix
     Θmatrix = -0.5*Bmatrix - K*Bmatrix - T*Cmatrix
-    _compute_correction_matrix_store_matrix!(dimdata, Θmatrix)
+    _compute_correction_matrices_store_matrix!(dimdata, Θmatrix)
 end
-function _compute_correction_matrix_auxiliary_matrices!(dimdata::IndirectDimData, Bmatrix, Cmatrix)
+function _compute_correction_matrices_auxiliary_matrices!(dimdata::IndirectDimData, Bmatrix, Cmatrix)
     n_qnodes = get_number_of_qnodes(dimdata)
     n_sources = get_number_of_srcs(dimdata)
     k, _, _ = getparameters(dimdata)   # wavenumber
@@ -161,7 +161,7 @@ function _compute_correction_matrix_auxiliary_matrices!(dimdata::IndirectDimData
         end
     end
 end  
-function _compute_correction_matrix_store_matrix!(dimdata::IndirectDimData, Θmatrix)
+function _compute_correction_matrices_store_matrix!(dimdata::IndirectDimData, Θmatrix)
     # Store rows of Θmatrix in dimdata
     n_qnodes = get_number_of_qnodes(dimdata)
     n_sources = get_number_of_srcs(dimdata)
