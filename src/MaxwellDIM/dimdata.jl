@@ -38,9 +38,9 @@ struct DimData{F<:AbstractDimFormulation}
     mesh::GenericMesh              # Contains the elements parametrization
     gquad::GlobalQuadrature        # Contains quadrature data
     # Parameters (maybe move this to a mutable struct?)
-    k::Float64       # Wavenumber               
-    α::Float64       # Density interpolant `α` parameter  
-    β::Float64       # Density interpolant `β` parameter 
+    k::ComplexF64       # Wavenumber               
+    α::ComplexF64       # Density interpolant `α` parameter  
+    β::ComplexF64       # Density interpolant `β` parameter 
     # Surface density `ϕ` at quadrature nodes `yⱼ`.
     # Each entry `(ϕ₁, ϕ₂)` correspond to the coefficients
     # in `ϕ(yⱼ) = ϕ₁τ₁ + ϕ₂τ₂`, where `τ₁,τ₂` are the tangential 
