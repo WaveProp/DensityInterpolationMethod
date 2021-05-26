@@ -9,6 +9,7 @@ module MaxwellDIM
 
 using LinearAlgebra
 using StaticArrays
+using LinearMaps
 
 using DensityInterpolationMethod.Mesh
 using DensityInterpolationMethod.Integration
@@ -27,4 +28,5 @@ include("dimdata.jl")
 include("dim.jl")
 include("dim_direct.jl")
 include("integraloperators.jl")
+include("integraloperators_interface.jl")
 end

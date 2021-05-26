@@ -3,12 +3,6 @@
 [[ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
-[[ArrayLayouts]]
-deps = ["FillArrays", "LinearAlgebra", "SparseArrays"]
-git-tree-sha1 = "b53ddb9ea93ed75506a9cfcae4a6514ceffb1997"
-uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
-version = "0.7.0"
-
 [[ArtifactUtils]]
 deps = ["Pkg", "SHA"]
 git-tree-sha1 = "365f3d6e14acb92aa8f082208621439ed2d2aa4d"
@@ -61,12 +55,6 @@ git-tree-sha1 = "47442fd61e753190179778660601156472b5d1ec"
 uuid = "7c1d4256-1411-5781-91ec-d7bc3513ac07"
 version = "0.3.15"
 
-[[FillArrays]]
-deps = ["LinearAlgebra", "Random", "SparseArrays"]
-git-tree-sha1 = "31939159aeb8ffad1d4d8ee44d07f8558273120a"
-uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
-version = "0.11.7"
-
 [[Future]]
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
@@ -95,12 +83,6 @@ git-tree-sha1 = "81690084b6198a2e1da36fcfda16eeca9f9f24e4"
 uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 version = "0.21.1"
 
-[[LazyArrays]]
-deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra", "MacroTools", "MatrixFactorizations", "SparseArrays", "StaticArrays"]
-git-tree-sha1 = "b68b57aa973a0526568c67cbbb68c24c2c98cc47"
-uuid = "5078a376-72f3-5289-bfd5-ec5146d43c02"
-version = "0.21.4"
-
 [[LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
@@ -124,24 +106,18 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 deps = ["Libdl"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
+[[LinearMaps]]
+deps = ["LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "ebec45cc8cfe3c947b01c2c491e7e1eefba73c4f"
+uuid = "7a12625a-238d-50fd-b39a-03d52299707e"
+version = "3.3.0"
+
 [[Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
-
-[[MacroTools]]
-deps = ["Markdown", "Random"]
-git-tree-sha1 = "6a8a2a625ab0dea913aba95c11370589e0239ff0"
-uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.6"
 
 [[Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
-
-[[MatrixFactorizations]]
-deps = ["ArrayLayouts", "LinearAlgebra", "Printf", "Random"]
-git-tree-sha1 = "304dec6e95a14d2284759645078f7e4f0189ea39"
-uuid = "a3b82374-2e81-5b9e-98ce-41277c0e4c87"
-version = "0.8.3"
 
 [[MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
