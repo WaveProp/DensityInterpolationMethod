@@ -89,6 +89,15 @@ function evaluate_interpolant_forwardmap(dimdata::DimData, qnode_index_i)
     end
 end
 
+function evaluate_nystrom_interpolant_forwardmap(dimdata::DimData, qnode_index_i)
+    # qnode i data
+    qnode_i = get_qnode(dimdata.gquad, qnode_index_i)  
+    _, _, jacᵢ, _ = get_qnode_data(qnode_i) 
+    # interpolant forward map
+    interpolant_forwardmap_i = evaluate_interpolant_forwardmap(dimdata, qnode_index_i)
+    return transpose(jacᵢ)*interpolant_forwardmap_i
+end
+
 abstract type AbstractIntegralOperator{T, N} <: AbstractArray{T, N} end
 function Base.size(iop::AbstractIntegralOperator{T, N}) where {T, N}
     n_qnodes = get_number_of_qnodes(iop.dimdata)
@@ -101,6 +110,11 @@ struct InterpolantOperator <: AbstractIntegralVectorOperator{ComplexPoint3D}
     dimdata::IndirectDimData
 end
 Base.getindex(iop::InterpolantOperator, i::Integer) = evaluate_interpolant_forwardmap(iop.dimdata, i)
+
+struct NystromInterpolantOperator <: AbstractIntegralVectorOperator{ComplexPoint2D}
+    dimdata::IndirectDimData
+end
+Base.getindex(iop::NystromInterpolantOperator, i::Integer) = evaluate_nystrom_interpolant_forwardmap(iop.dimdata, i)
 
 struct SingleLayerOperator <: AbstractIntegralMatrixOperator{MaxwellKernelType}
     dimdata::IndirectDimData
