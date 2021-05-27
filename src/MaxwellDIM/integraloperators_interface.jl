@@ -45,7 +45,38 @@ const InteriorNystromMaxwellOperator = _NystromMaxwellOperator{InteriorNystromFo
 const ExteriorNystromMaxwellOperator = _NystromMaxwellOperator{ExteriorNystromFormulation}
 Base.getindex(iop::_NystromMaxwellOperator{F}, i::Integer, j::Integer) where F = evaluate_nystrom_maxwell_operator(iop.dimdata, F, i, j)
 
-struct NystromLinearMap
+struct _NystromLinearMap{F<:AbstractNystromFormulation}
     dimdata::IndirectDimData
 end
+const NystromLinearMap = _NystromLinearMap{NoneNystromFormulation}
+const InteriorNystromLinearMap = _NystromLinearMap{InteriorNystromFormulation}
+const ExteriorNystromLinearMap = _NystromLinearMap{ExteriorNystromFormulation}
+function Base.size(iop::_NystromLinearMap) 
+    n_qnodes = get_number_of_qnodes(iop.dimdata)
+    n_unknowns = DIMENSION2 * n_qnodes  # 2 unknowns per qnode
+    return (n_unknowns, n_unknowns)
+end
+Base.size(iop::_NystromLinearMap, i::Integer) = size(iop)[i] 
+Base.eltype(::_NystromLinearMap) = ComplexF64
+LinearAlgebra.mul!(y, iop::_NystromLinearMap, b) = y .= evaluate_nystrom_linear_map(iop, b)
 
+function evaluate_nystrom_linear_map(nstruct::_NystromLinearMap{F}, ϕvec::AbstractVector{ComplexF64}) where F
+    # copy density into dimdata (FIX: this shouldn't be necessary)
+    @assert length(nstruct.dimdata.density_coeff_data) == length(ϕvec)
+    copyto!(nstruct.dimdata.density_coeff_data, ϕvec)
+    # compute linear map
+    compute_density_interpolant!(nstruct.dimdata)
+    v = NystromInterpolantOperator(nstruct.dimdata)
+    A = _NystromMaxwellOperator{F}(nstruct.dimdata)
+    ϕ = nstruct.dimdata.density_coeff
+    result = A*ϕ + v
+    reinterpreted_result = reinterpret(ComplexF64, result)
+    return reinterpreted_result
+end
+
+function IterativeSolvers.gmres!(nstruct::_NystromLinearMap, rhs; kwargs...)
+    result = zeros(ComplexF64, size(nstruct.dimdata.density_coeff_data))
+    IterativeSolvers.gmres!(result, nstruct, rhs; kwargs...) # initially_zero=true
+    copyto!(nstruct.dimdata.density_coeff_data, result)
+    return nothing
+end

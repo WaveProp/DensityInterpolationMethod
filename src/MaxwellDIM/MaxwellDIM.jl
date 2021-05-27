@@ -9,7 +9,7 @@ module MaxwellDIM
 
 using LinearAlgebra
 using StaticArrays
-using LinearMaps
+using IterativeSolvers
 
 using DensityInterpolationMethod.Mesh
 using DensityInterpolationMethod.Integration

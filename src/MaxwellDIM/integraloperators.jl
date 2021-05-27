@@ -54,7 +54,7 @@ function evaluate_single_and_double_layer_operators(dimdata::DimData, formtype::
     element_index_i = qnode_i.element_index             # element index of qnode i
     if qnode_index_i == qnode_index_j
         # the single layer operator (Toperator) is zero
-        # and the quadrature weigth (wj) is not used (set to unity)
+        # and the quadrature weigth (wj) is not used (set to one)
         Toperator = zero(MaxwellKernelType)
         wj = 1
         # the double layer operator (Koperator) depends on
@@ -69,7 +69,7 @@ function evaluate_single_and_double_layer_operators(dimdata::DimData, formtype::
     elseif is_qnode_in_element(dimdata.gquad, qnode_index_j, element_index_i)
         # both the single layer operator (Toperator) and the
         # double layer operator (Koperator) are zero
-        # and the quadrature weigth (wj) is not relevant (set to unity)
+        # and the quadrature weigth (wj) is not relevant (set to one)
         Toperator = zero(MaxwellKernelType)
         Koperator = zero(MaxwellKernelType)
         wj = 1
