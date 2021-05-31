@@ -141,3 +141,47 @@ function evaluate_nystrom_interpolant_forwardmap(dimdata::DimData, qnode_index_i
     interpolant_forwardmap_i = evaluate_interpolant_forwardmap(dimdata, qnode_index_i)
     return transpose(jacᵢ)*interpolant_forwardmap_i
 end
+
+function generate_interpolant_forwardmap_matrix(dimdata::IndirectDimData)
+    # construct sparse array
+    I = Int64[]
+    J = Int64[]
+    V = ReducedReducedMaxwellKernelType[]
+    for element_index in get_element_indices(dimdata.gquad)
+        inelement_qnode_indices = get_inelement_qnode_indices(dimdata.gquad, element_index)
+        element_matrix = _generate_interpolant_forwardmap_matrix_element_matrix(dimdata, element_index, inelement_qnode_indices)
+        for i in inelement_qnode_indices
+            qnode_matrices = _generate_interpolant_forwardmap_matrix_qnode_matrices(dimdata, element_matrix, i)
+            for (j, qnode_matrix) in zip(inelement_qnode_indices, qnode_matrices)
+                push!(I, i)
+                push!(J, j)
+                push!(V, qnode_matrix)
+            end
+        end
+    end
+    return sparse(I, J, V)
+end
+function _generate_interpolant_forwardmap_matrix_element_matrix(dimdata::IndirectDimData, element_index, inelement_qnode_indices)
+    n_qnodes = length(inelement_qnode_indices)   # number of qnodes in element
+    Lmatrix = dimdata.Lmatrices[element_index]
+    Qmatrix = dimdata.Qmatrices[element_index]
+    _, α, β = getparameters(dimdata)
+    n_unknowns = DIMENSION2*n_qnodes  # number of unknowns = 2 per qnode
+    Dαβ = [α*I(n_unknowns); β*I(n_unknowns)]  
+    jacobians = Base.Generator(inelement_qnode_indices) do qnode_index
+        qnode = get_qnode(dimdata.gquad, qnode_index)
+        _, _, jac, _ = get_qnode_data(qnode)
+        transpose(jac)*jac
+    end
+    Jmatrix = blockmatrix_to_matrix(Diagonal(collect(jacobians))) # better way of doing this?
+    element_matrix = adjoint(Qmatrix) * (Lmatrix \ (Dαβ * Jmatrix))
+    return element_matrix
+end
+function _generate_interpolant_forwardmap_matrix_qnode_matrices(dimdata::IndirectDimData, element_matrix, qnode_index)
+    qnodeᵢ = get_qnode(dimdata.gquad, qnode_index)
+    _, _, jacᵢ, _ = get_qnode_data(qnodeᵢ) # jacobian
+    Θᵢ = get_interpolant_correction_matrices(dimdata, qnode_index)
+    Θᵢmatrix = hcat(Θᵢ...)
+    qnode_matrices = transpose(jacᵢ) * Θᵢmatrix * element_matrix
+    return reinterpret(ReducedReducedMaxwellKernelType, @view qnode_matrices[:])
+end

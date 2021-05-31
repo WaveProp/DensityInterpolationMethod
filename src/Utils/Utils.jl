@@ -124,7 +124,7 @@ end
 
 Convert a `Matrix{B}`, where `B<:SMatrix`, to the equivalent `Matrix{T}`, where `T = eltype(B)`
 """
-function blockmatrix_to_matrix(A::Matrix{B}) where B<:SMatrix
+function blockmatrix_to_matrix(A::AbstractMatrix{B}) where B<:SMatrix
     T = eltype(B) 
     sblock = size(B)
     ss     = size(A).*sblock # matrix size when viewed as matrix over T
@@ -144,7 +144,7 @@ Convert a `Matrix{T}` to a `Matrix{B}`, where `B<:Type{SMatrix}`. The element
 type of `B` must match that of `A`, and the size of `A` must be divisible by the
 size of `B` along each dimension. 
 """
-function matrix_to_blockmatrix(A::Matrix, B::Type{<:SMatrix})
+function matrix_to_blockmatrix(A::AbstractMatrix, B::Type{<:SMatrix})
     @assert eltype(A) == eltype(B)
     @assert sum(size(A) .% size(B)) == 0 "block size $(size(B)) not compatible with size of A=$(size(A))"
     sblock = size(B)

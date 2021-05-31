@@ -8,6 +8,7 @@ Method.
 module MaxwellDIM
 
 using LinearAlgebra
+using SparseArrays
 using StaticArrays
 using IterativeSolvers
 
