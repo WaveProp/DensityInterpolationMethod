@@ -21,7 +21,7 @@ function convergence_potential(eval_pts, ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, 
     dimdata = DM.generate_dimdata(mesh, qorder=QUADRATURE_ORDER, k=k,
                                 n_src=n_src, α=α, β=β, r=r_factor, indirect=indirect);
     # Compute DIM matrices   
-    DM.assemble_dim_matrices(dimdata)
+    DM.assemble_interpolant_LQ_matrices!(dimdata)
 
     # Field produced by electric dipole
     src = Point3D(-0.1, 0.3, -0.2)    # dipole location

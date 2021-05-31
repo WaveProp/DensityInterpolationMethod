@@ -34,7 +34,7 @@ end
 
 # Compute density interpolant coefficients for all elements
 println("Computing DIM matrices...")
-DM.assemble_dim_matrices(dimdata)
+DM.assemble_interpolant_LQ_matrices!(dimdata)
 println("Done")
 println("Computing density interpolant...")
 DM.compute_density_interpolant!(dimdata)

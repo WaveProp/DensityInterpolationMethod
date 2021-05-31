@@ -4,7 +4,7 @@ abstract type ExteriorNystromFormulation <: AbstractNystromFormulation end
 abstract type InteriorNystromFormulation <: AbstractNystromFormulation end
 const NystromFormulationType = Type{<:AbstractNystromFormulation}
 
-function compute_correction_matrices!(dimdata::IndirectDimData)
+function assemble_interpolant_correction_matrices!(dimdata::IndirectDimData)
     n_qnodes = get_number_of_qnodes(dimdata)
     n_sources = get_number_of_srcs(dimdata)
     # Assemble auxiliary matrices

@@ -55,7 +55,7 @@ function convergence_interpolant(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
     β = 3       # DIM β parameter
     dimdata = generate_dimdata(mesh, qorder=QUADRATURE_ORDER, k=k,
                            n_src=n_src, α=α, β=β, r=r_factor);
-    DM.assemble_dim_matrices(dimdata)
+    DM.assemble_interpolant_LQ_matrices!(dimdata)
 
     # Set the surface density `ϕ` equal to an electric dipole field
     # Field produced by electric dipole

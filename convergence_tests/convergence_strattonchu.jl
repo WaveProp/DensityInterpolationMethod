@@ -23,7 +23,7 @@ function convergence_strattonchu(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
     dimdata = DM.generate_dimdata(mesh, qorder=QUADRATURE_ORDER, k=k,
                                 n_src=n_src, α=α, β=β, r=r_factor, indirect=indirect);
     # Compute DIM matrices   
-    DM.assemble_dim_matrices(dimdata)
+    DM.assemble_interpolant_LQ_matrices!(dimdata)
 
     # Field produced by electric dipole
     src = Point3D(3, 3, 3)    # dipole location

@@ -4,19 +4,19 @@ Density Interpolation Method.
 """
 
 """
-    assemble_dim_matrices(dimdata::DimData)
-    assemble_dim_matrices(dimdata::DimData, element_index::Integer)
+    assemble_interpolant_LQ_matrices!(dimdata::DimData)
+    assemble_interpolant_LQ_matrices!(dimdata::DimData, element_index::Integer)
 
 Assembles the matrix for computing the Density Interpolant and
 stores its LQ decomposition in `dimdata`, for each element in `dimdata`.
 """
-function assemble_dim_matrices(dimdata::DimData)
+function assemble_interpolant_LQ_matrices!(dimdata::DimData)
     # Compute DIM matrices for each element
     for element_index in get_element_indices(dimdata.gquad) 
-        assemble_dim_matrices(dimdata, element_index)
+        assemble_interpolant_LQ_matrices!(dimdata, element_index)
     end
 end
-function assemble_dim_matrices(dimdata::DimData, element_index)
+function assemble_interpolant_LQ_matrices!(dimdata::DimData, element_index)
     # Get data
     qnode_list = get_qnodes(dimdata.gquad, element_index)   # list of qnodes in element
     src_list = dimdata.src_list      # list of interpolant source points
@@ -81,7 +81,7 @@ end
     compute_density_interpolant!(dimdata::DimData, element_index)
 
 Computes the Density Interpolant coefficients, for each element
-in `dimdata`. This assumes that [`assemble_dim_matrices`](@ref) has already
+in `dimdata`. This assumes that [`assemble_interpolant_LQ_matrices!`](@ref) has already
 been called.
 """
 function compute_density_interpolant!(dimdata::DimData)
