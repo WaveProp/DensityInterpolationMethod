@@ -168,12 +168,12 @@ function _generate_interpolant_forwardmap_matrix_element_matrix(dimdata::Indirec
     _, α, β = getparameters(dimdata)
     n_unknowns = DIMENSION2*n_qnodes  # number of unknowns = 2 per qnode
     Dαβ = [α*I(n_unknowns); β*I(n_unknowns)]  
-    jacobians = Base.Generator(inelement_qnode_indices) do qnode_index
+    jacobians = map(inelement_qnode_indices) do qnode_index
         qnode = get_qnode(dimdata.gquad, qnode_index)
         _, _, jac, _ = get_qnode_data(qnode)
         transpose(jac)*jac
     end
-    Jmatrix = blockmatrix_to_matrix(Diagonal(collect(jacobians))) # better way of doing this?
+    Jmatrix = diagonalblockmatrix_to_matrix(jacobians) 
     element_matrix = adjoint(Qmatrix) * (Lmatrix \ (Dαβ * Jmatrix))
     return element_matrix
 end

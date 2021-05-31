@@ -17,6 +17,7 @@ export DIMENSION2,
        assert_extension,
        print_threads_info,
        enable_debug,
+       diagonalblockmatrix_to_matrix,
        blockmatrix_to_matrix,
        matrix_to_blockmatrix
 
@@ -120,9 +121,36 @@ function enable_debug(flag=true)
 end
 
 """
-    blockmatrix_to_matrix(A::Matrix{B}) where {B<:SMatrix}
+    diagonalblockmatrix_to_matrix(A::Matrix{B}) where {B<:SMatrix}
 
-Convert a `Matrix{B}`, where `B<:SMatrix`, to the equivalent `Matrix{T}`, where `T = eltype(B)`
+Convert a diagonal block matrix `A::AbstractVector{B}`, where `A` is the list of diagonal blocks
+and `B<:SMatrix`, to the equivalent `Matrix{T}`, where `T = eltype(B)`.
+"""
+function diagonalblockmatrix_to_matrix(A::AbstractVector{B}) where B<:SMatrix
+    # FIXME: convert to a sparse matrix instead
+    T = eltype(B) 
+    sblock = size(B)
+    ss = size(A) .* sblock  # matrix size when viewed as matrix over T
+    Afull = zeros(T, ss)
+    i_full, j_full = (1, 1)
+    for subA in A
+        i_tmp = i_full
+        for j in 1:sblock[2]
+            i_full = i_tmp
+            for i in 1:sblock[1]
+                Afull[i_full, j_full] = subA[i, j]
+                i_full += 1
+            end
+            j_full += 1
+        end
+    end
+    return Afull
+end
+
+"""
+    blockmatrix_to_matrix(A::AbstractMatrix{B}) where {B<:SMatrix}
+
+Convert an `AbstractMatrix{B}`, where `B<:SMatrix`, to the equivalent `Matrix{T}`, where `T = eltype(B)`.
 """
 function blockmatrix_to_matrix(A::AbstractMatrix{B}) where B<:SMatrix
     T = eltype(B) 
@@ -138,9 +166,9 @@ function blockmatrix_to_matrix(A::AbstractMatrix{B}) where B<:SMatrix
 end
 
 """
-    matrix_to_blockmatrix(A::Matrix,B)
+    matrix_to_blockmatrix(A::AbstractMatrix,B)
 
-Convert a `Matrix{T}` to a `Matrix{B}`, where `B<:Type{SMatrix}`. The element
+Convert an `AbstractMatrix{T}` to a `Matrix{B}`, where `B<:Type{SMatrix}`. The element
 type of `B` must match that of `A`, and the size of `A` must be divisible by the
 size of `B` along each dimension. 
 """
