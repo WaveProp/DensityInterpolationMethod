@@ -61,7 +61,7 @@ Base.eltype(::_NystromLinearMap) = ComplexF64
 LinearAlgebra.mul!(y, iop::_NystromLinearMap, b) = y .= evaluate_nystrom_linear_map(iop, b)
 
 function evaluate_nystrom_linear_map(nstruct::_NystromLinearMap{F}, ϕvec::AbstractVector{ComplexF64}) where F
-    # copy density into dimdata (FIX: this shouldn't be necessary)
+    # copy density into dimdata (FIXME: this shouldn't be necessary)
     @assert length(nstruct.dimdata.density_coeff_data) == length(ϕvec)
     copyto!(nstruct.dimdata.density_coeff_data, ϕvec)
     # compute linear map

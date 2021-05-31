@@ -139,6 +139,21 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
 end
 
 """
+    initialize!(dimdata::IndirectDimData)
+
+Initializes `dimdata` by assembling the interpolant LQ matrices
+and correction matrices (Θ matrices), for each element in `dimdata`.
+"""
+function initialize!(dimdata::IndirectDimData)
+    @info "Assembling interpolant LQ matrices..."
+    assemble_interpolant_LQ_matrices!(dimdata)
+    @info "Done."
+    @info "Assembling interpolant correction matrices (Θ matrices)..."
+    assemble_interpolant_correction_matrices!(dimdata)
+    @info "Done."
+end
+
+"""
     getparameters(dimdata::DimData)
 
 Returns the wavenumber `k` and the `α`, `β` density 

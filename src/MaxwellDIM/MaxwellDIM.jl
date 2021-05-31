@@ -30,4 +30,5 @@ include("dim.jl")
 include("dim_direct.jl")
 include("integraloperators.jl")
 include("integraloperators_interface.jl")
+include("linalg.jl")
 end

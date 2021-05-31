@@ -158,7 +158,7 @@ end
     electric_dipole_electric_field(x, y, k, ϕy)  
 
 Returns the electric field at `x` produced by an electric dipole
-located at `y` with direction `ϕy` and wavenumber `k`. 
+located at `y` with polarizaton `ϕy` and wavenumber `k`. 
 The electric field is given by `Gₖ(x, y) * ϕy`, where `Gₖ` is the
 Green tensor.
 """
@@ -170,7 +170,7 @@ end
     electric_dipole_magnetic_field(x, y, k, ϕy)  
 
 Returns the magnetic field at `x` produced by an electric dipole
-located at `y` with direction `ϕy` and wavenumber `k`. 
+located at `y` with polarizaton `ϕy` and wavenumber `k`. 
 The magnetic field is given by `1/(im*k) * ∇ × Gₖ(x, y) * ϕy`, where `Gₖ` is the
 Green tensor.
 """
