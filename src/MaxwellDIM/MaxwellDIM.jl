@@ -10,6 +10,7 @@ module MaxwellDIM
 using LinearAlgebra
 using SparseArrays
 using StaticArrays
+using BlockArrays
 using IterativeSolvers
 
 using DensityInterpolationMethod.Mesh

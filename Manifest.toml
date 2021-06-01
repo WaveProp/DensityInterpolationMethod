@@ -3,6 +3,12 @@
 [[ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
+[[ArrayLayouts]]
+deps = ["FillArrays", "LinearAlgebra", "SparseArrays"]
+git-tree-sha1 = "b53ddb9ea93ed75506a9cfcae4a6514ceffb1997"
+uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
+version = "0.7.0"
+
 [[ArtifactUtils]]
 deps = ["Pkg", "SHA"]
 git-tree-sha1 = "365f3d6e14acb92aa8f082208621439ed2d2aa4d"
@@ -20,6 +26,12 @@ deps = ["JSON", "Logging", "Printf", "Statistics", "UUIDs"]
 git-tree-sha1 = "068fda9b756e41e6c75da7b771e6f89fa8a43d15"
 uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 version = "0.7.0"
+
+[[BlockArrays]]
+deps = ["ArrayLayouts", "FillArrays", "LinearAlgebra"]
+git-tree-sha1 = "a37151e369c618aebaff8b95b9db2f603246e160"
+uuid = "8e7c35d0-a365-5155-bbbb-fb81a777f24e"
+version = "0.15.3"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
@@ -54,6 +66,12 @@ deps = ["DataStructures", "Future", "LinearAlgebra", "MultivariatePolynomials", 
 git-tree-sha1 = "47442fd61e753190179778660601156472b5d1ec"
 uuid = "7c1d4256-1411-5781-91ec-d7bc3513ac07"
 version = "0.3.15"
+
+[[FillArrays]]
+deps = ["LinearAlgebra", "Random", "SparseArrays"]
+git-tree-sha1 = "31939159aeb8ffad1d4d8ee44d07f8558273120a"
+uuid = "1a297f60-69ca-5386-bcde-b61e274b549b"
+version = "0.11.7"
 
 [[Future]]
 deps = ["Random"]
