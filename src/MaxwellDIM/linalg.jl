@@ -30,4 +30,8 @@ function solve_nystrom_LU!(dimdata::IndirectDimData, A, b)
     compute_density_interpolant!(dimdata) # for future evaluations
 end
 
-function solve_nystrom_GMRES! end
+function solve_nystrom_GMRES!(dimdata::IndirectDimData, A, b; kwargs...)
+    copyto!(dimdata.density_coeff_data, b)
+    gmres!(dimdata.density_coeff_data, A, b; kwargs...)
+    compute_density_interpolant!(dimdata) # for future evaluations
+end
