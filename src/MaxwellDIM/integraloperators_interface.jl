@@ -80,3 +80,18 @@ function IterativeSolvers.gmres!(nstruct::_NystromLinearMap, rhs; kwargs...)
     copyto!(nstruct.dimdata.density_coeff_data, result)
     return nothing
 end
+
+function convert_operator_to_matrix(op::AbstractIntegralMatrixOperator{T}) where T
+    matrix = Matrix{T}(undef, size(op))
+    convert_operator_to_matrix!(matrix, op)
+    return matrix
+end
+function convert_operator_to_matrix!(matrix::Matrix{T}, op::AbstractIntegralMatrixOperator{T}) where T
+    @assert size(op) == size(matrix)
+    imax, jmax = size(op)
+    Threads.@threads for j in 1:jmax
+        for i in 1:imax
+            matrix[i, j] = op[i, j]
+        end
+    end
+end

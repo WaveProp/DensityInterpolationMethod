@@ -53,9 +53,10 @@ function convergence_nystrom(eval_points, HMAX, QUADRATURE_ORDER)
 
     # print results
     nElem = get_number_of_elements(dimdata.gquad)
+    nUnk = get_number_of_qnodes(dimdata) * DIMENSION2
     h = dimdata.hmax
     QO = QUADRATURE_ORDER
-    @info "results: h= $h, nElem= $nElem, QO= $QO, error= $error\n"
+    @info "results: h= $h, nElem= $nElem, nUnk= $nUnk, QO= $QO, error= $error\n"
     println()
 end
 
@@ -70,7 +71,8 @@ eval_points = [Point3D(r*sin(ϕ)*cos(θ),
 
 ##
 HMAX = [5, 4, 3, 2, 1.5, 1, 0.8]
-QUADRATURE_ORDER = 4
+HMAX = [1]
+QUADRATURE_ORDER = 6
 for h in HMAX
     convergence_nystrom(eval_points, h, QUADRATURE_ORDER)
 end

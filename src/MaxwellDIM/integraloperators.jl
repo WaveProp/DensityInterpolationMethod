@@ -13,11 +13,13 @@ function assemble_interpolant_correction_matrices!(dimdata::IndirectDimData)
     Bmatrix = Matrix{MaxwellKernelType}(undef, n_qnodes, n_sources)
     Cmatrix = Matrix{MaxwellKernelType}(undef, n_qnodes, n_sources)
     _compute_correction_matrices_auxiliary_matrices!(dimdata, Bmatrix, Cmatrix)
-    # Single and double layer operators
-    T = SingleLayerOperator(dimdata)
-    K = DoubleLayerOperator(dimdata)
+
     # Compute correction matrix
-    Θmatrix = -0.5*Bmatrix - K*Bmatrix - T*Cmatrix
+    # TODO: implement fast evaluation of single and double layer operators
+    A = convert_operator_to_matrix(DoubleLayerOperator(dimdata))
+    Θmatrix = -0.5*Bmatrix - A*Bmatrix
+    convert_operator_to_matrix!(A, SingleLayerOperator(dimdata))
+    Θmatrix .-= A*Cmatrix
     _compute_correction_matrices_store_matrix!(dimdata, Θmatrix)
 end
 function _compute_correction_matrices_auxiliary_matrices!(dimdata::IndirectDimData, Bmatrix, Cmatrix)

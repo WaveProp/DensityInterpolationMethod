@@ -5,7 +5,7 @@ function compute_nystrom_maxwell_matrix(dimdata::IndirectDimData, formtype::Nyst
     block_sizes = [DIMENSION2 for _ in 1:n_qnodes] # number of unknowns = (2 per qnode)
     M = PseudoBlockArray{ComplexF64}(undef, block_sizes, block_sizes)
     # M = blockmatrix_to_matrix(V₀+V₁)
-    for j in 1:n_qnodes
+    Threads.@threads for j in 1:n_qnodes
         for i in 1:n_qnodes
             M[Block(i, j)] = V₀[i, j] + V₁[i, j]
         end
