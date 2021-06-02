@@ -81,6 +81,12 @@ function IterativeSolvers.gmres!(nstruct::_NystromLinearMap, rhs; kwargs...)
     return nothing
 end
 
+"""
+    convert_operator_to_matrix(op::AbstractIntegralMatrixOperator{T}) where T
+
+Converts `op::AbstractIntegralMatrixOperator{T}` into `matrix::Matrix{T}`. Threads 
+are used to speed up computations.
+"""
 function convert_operator_to_matrix(op::AbstractIntegralMatrixOperator{T}) where T
     matrix = Matrix{T}(undef, size(op))
     convert_operator_to_matrix!(matrix, op)

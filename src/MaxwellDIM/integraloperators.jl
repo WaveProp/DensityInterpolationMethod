@@ -1,9 +1,25 @@
+
 abstract type AbstractNystromFormulation end
 abstract type NoneNystromFormulation <: AbstractNystromFormulation end
 abstract type ExteriorNystromFormulation <: AbstractNystromFormulation end
 abstract type InteriorNystromFormulation <: AbstractNystromFormulation end
+
+"""
+    const NystromFormulationType = Type{<:AbstractNystromFormulation}
+
+Abstract types that defines the evaluation of the Double Layer operator jump
+in some functions and structures.
+"""
 const NystromFormulationType = Type{<:AbstractNystromFormulation}
 
+"""
+    assemble_interpolant_correction_matrices!(dimdata::IndirectDimData)
+
+Assembles the matrices `Θᵢ` for each element `i` in `dimdata`. These matrices are used
+for efficient evaluations of the operator `V₁`. ('It accounts for the
+local kernel-regularization performed around the diagonal (singular) entries by gathering all the
+contributions arising from the collocation density interpolants.')
+"""
 function assemble_interpolant_correction_matrices!(dimdata::IndirectDimData)
     n_qnodes = get_number_of_qnodes(dimdata)
     n_sources = get_number_of_srcs(dimdata)
@@ -13,7 +29,6 @@ function assemble_interpolant_correction_matrices!(dimdata::IndirectDimData)
     Bmatrix = Matrix{MaxwellKernelType}(undef, n_qnodes, n_sources)
     Cmatrix = Matrix{MaxwellKernelType}(undef, n_qnodes, n_sources)
     _compute_correction_matrices_auxiliary_matrices!(dimdata, Bmatrix, Cmatrix)
-
     # Compute correction matrix
     # TODO: implement fast evaluation of single and double layer operators
     A = convert_operator_to_matrix(DoubleLayerOperator(dimdata))
@@ -50,8 +65,15 @@ function _compute_correction_matrices_store_matrix!(dimdata::IndirectDimData, Θ
     end
 end
 
+"""
+    evaluate_single_and_double_layer_operators(dimdata::DimData, formtype::NystromFormulationType, 
+                                               qnode_index_i, qnode_index_j)::Tuple{MaxwellKernelType,MaxwellKernelType}
+
+Evaluates and returns the entry of the (discretized) Maxwell's single and double layer operators `(T_ij, K_ij)`
+for qnodes indices `i` and `j`. These entries do not include the self-element (singular) contributions.
+"""
 function evaluate_single_and_double_layer_operators(dimdata::DimData, formtype::NystromFormulationType, 
-                                                     qnode_index_i, qnode_index_j) 
+                                                    qnode_index_i, qnode_index_j)::Tuple{MaxwellKernelType,MaxwellKernelType}
     qnode_i = get_qnode(dimdata.gquad, qnode_index_i)   # qnode i object
     element_index_i = qnode_i.element_index             # element index of qnode i
     if qnode_index_i == qnode_index_j
@@ -92,17 +114,41 @@ function evaluate_single_and_double_layer_operators(dimdata::DimData, formtype::
     return wj*Toperator, wj*Koperator  
 end
 
-function evaluate_single_layer_operator(dimdata::DimData, qnode_index_i, qnode_index_j) 
-    SL, _ = evaluate_single_and_double_layer_operators(dimdata, NoneNystromFormulation, qnode_index_i, qnode_index_j) 
+"""
+    evaluate_single_layer_operator(dimdata::DimData, qnode_index_i, qnode_index_j)::MaxwellKernelType 
+
+Evaluates and returns the entry of the (discretized) Maxwell's single operator `T_ij`
+for qnodes indices `i` and `j`.
+"""
+function evaluate_single_layer_operator(dimdata::DimData, qnode_index_i, qnode_index_j)::MaxwellKernelType 
+    SL, _ = evaluate_single_and_double_layer_operators(dimdata, NoneNystromFormulation, 
+                                                       qnode_index_i, qnode_index_j) 
     return SL
 end
 
-function evaluate_double_layer_operator(dimdata::DimData, formtype::NystromFormulationType, qnode_index_i, qnode_index_j) 
-    _, DL = evaluate_single_and_double_layer_operators(dimdata, formtype, qnode_index_i, qnode_index_j) 
+"""
+    evaluate_double_layer_operator(dimdata::DimData, formtype::NystromFormulationType, 
+                                   qnode_index_i, qnode_index_j)::MaxwellKernelType  
+
+Evaluates and returns the entry of the (discretized) Maxwell's double operator `K_ij`
+for qnodes indices `i` and `j`.
+"""
+function evaluate_double_layer_operator(dimdata::DimData, formtype::NystromFormulationType, 
+                                        qnode_index_i, qnode_index_j)::MaxwellKernelType  
+    _, DL = evaluate_single_and_double_layer_operators(dimdata, formtype, 
+                                                       qnode_index_i, qnode_index_j) 
     return DL
 end
 
-function evaluate_combined_layer_operator(dimdata::DimData, formtype::NystromFormulationType, qnode_index_i, qnode_index_j) 
+"""
+    evaluate_combined_layer_operator(dimdata::IndirectDimData, formtype::NystromFormulationType,
+                                     qnode_index_i, qnode_index_j)::ReducedMaxwellKernelType
+
+Evaluates and returns the entry of the (discretized) Maxwell's combined layer operator `C_ij`
+for qnodes indices `i` and `j`. 
+"""
+function evaluate_combined_layer_operator(dimdata::IndirectDimData, formtype::NystromFormulationType, 
+                                          qnode_index_i, qnode_index_j)::ReducedMaxwellKernelType
     _, α, β = getparameters(dimdata)
     SL, DL = evaluate_single_and_double_layer_operators(dimdata, formtype, qnode_index_i, qnode_index_j) 
     # qnode j data
@@ -113,7 +159,15 @@ function evaluate_combined_layer_operator(dimdata::DimData, formtype::NystromFor
     return CL
 end
 
-function evaluate_nystrom_maxwell_operator(dimdata::DimData, formtype::NystromFormulationType, qnode_index_i, qnode_index_j)
+"""
+    evaluate_nystrom_maxwell_operator(dimdata::IndirectDimData, formtype::NystromFormulationType, 
+                                      qnode_index_i, qnode_index_j)::ReducedReducedMaxwellKernelType
+
+Evaluates and returns the entry of the (discretized) Maxwell's combined layer operator `N_ij`
+used in the Nystrom integral equation, for qnodes indices `i` and `j`. 
+"""
+function evaluate_nystrom_maxwell_operator(dimdata::IndirectDimData, formtype::NystromFormulationType, 
+                                           qnode_index_i, qnode_index_j)::ReducedReducedMaxwellKernelType
     # qnode i data
     qnode_i = get_qnode(dimdata.gquad, qnode_index_i)  
     _, _, jacᵢ, _ = get_qnode_data(qnode_i) 
@@ -122,7 +176,14 @@ function evaluate_nystrom_maxwell_operator(dimdata::DimData, formtype::NystromFo
     return transpose(jacᵢ)*CL
 end
 
-function evaluate_interpolant_forwardmap(dimdata::DimData, qnode_index_i)
+"""
+    evaluate_interpolant_forwardmap(dimdata::IndirectDimData, qnode_index_i)::ComplexPoint3D
+
+Evaluates and returns the entry of the map `[V₁ϕ]ᵢ` for qnode index `i`, where `V₁` is 
+the interpolant (correction) operator. This function assumes that `assemble_interpolant_correction_matrices!`
+and `compute_density_interpolant!` have already been called.
+"""
+function evaluate_interpolant_forwardmap(dimdata::IndirectDimData, qnode_index_i)::ComplexPoint3D
     qnode_i = get_qnode(dimdata.gquad, qnode_index_i)   # qnode i object
     element_index_i = qnode_i.element_index             # element index of qnode i
     # interpolant coefficients of element i
@@ -135,7 +196,15 @@ function evaluate_interpolant_forwardmap(dimdata::DimData, qnode_index_i)
     end
 end
 
-function evaluate_nystrom_interpolant_forwardmap(dimdata::DimData, qnode_index_i)
+"""
+    evaluate_nystrom_interpolant_forwardmap(dimdata::IndirectDimData, qnode_index_i)::ComplexPoint2D
+
+Evaluates and returns the entry of the map `[V₁ϕ]ᵢ`, used in the Nystrom integral equation, 
+for qnode index `i`, where `V₁` is the interpolant (correction) operator. This function assumes 
+that `assemble_interpolant_correction_matrices!` and `compute_density_interpolant!` have already 
+been called.
+"""
+function evaluate_nystrom_interpolant_forwardmap(dimdata::IndirectDimData, qnode_index_i)::ComplexPoint2D
     # qnode i data
     qnode_i = get_qnode(dimdata.gquad, qnode_index_i)  
     _, _, jacᵢ, _ = get_qnode_data(qnode_i) 
@@ -144,6 +213,12 @@ function evaluate_nystrom_interpolant_forwardmap(dimdata::DimData, qnode_index_i
     return transpose(jacᵢ)*interpolant_forwardmap_i
 end
 
+"""
+    generate_interpolant_forwardmap_matrix(dimdata::IndirectDimData)
+
+Assembles the operator `V₁` in (sparse) matrix form, used in the Nystrom integral equation, 
+where `V₁` is the interpolant (correction) operator.
+"""
 function generate_interpolant_forwardmap_matrix(dimdata::IndirectDimData)
     # construct sparse array
     I = Int64[]
@@ -161,7 +236,8 @@ function generate_interpolant_forwardmap_matrix(dimdata::IndirectDimData)
             end
         end
     end
-    return sparse(I, J, V)
+    n_qnodes = get_number_of_qnodes(dimdata)
+    return sparse(I, J, V, n_qnodes, n_qnodes)
 end
 function _generate_interpolant_forwardmap_matrix_element_matrix(dimdata::IndirectDimData, element_index, inelement_qnode_indices)
     n_qnodes = length(inelement_qnode_indices)   # number of qnodes in element
@@ -185,5 +261,6 @@ function _generate_interpolant_forwardmap_matrix_qnode_matrices(dimdata::Indirec
     Θᵢ = get_interpolant_correction_matrices(dimdata, qnode_index)
     Θᵢmatrix = hcat(Θᵢ...)
     qnode_matrices = transpose(jacᵢ) * Θᵢmatrix * element_matrix
+    # convert the full matrix into a list of smaller matrices
     return reinterpret(ReducedReducedMaxwellKernelType, @view qnode_matrices[:])
 end

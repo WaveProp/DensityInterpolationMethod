@@ -3,10 +3,35 @@ Definition of Green tensor and utility functions
 for Maxwell's equations.
 """
 
+"""
+    const MaxwellKernelType = SMatrix{DIMENSION3, DIMENSION3, 
+                                      ComplexF64, DIMENSION3*DIMENSION3}
+
+Default kernel type used in Maxwell's integral operators.
+"""
 const MaxwellKernelType = SMatrix{DIMENSION3, DIMENSION3, 
                                   ComplexF64, DIMENSION3*DIMENSION3}
+
+"""
+    const ReducedMaxwellKernelType = SMatrix{DIMENSION3, DIMENSION2, 
+                                             ComplexF64, DIMENSION3*DIMENSION2}
+
+Kernel type used in Maxwell's integral operators. This kernel type is typically
+obtained when `MaxwellKernelType` (size = 3x3) is multiplied by a jacobian
+matrix (size = 3x2) from the right.
+"""
 const ReducedMaxwellKernelType = SMatrix{DIMENSION3, DIMENSION2, 
                                          ComplexF64, DIMENSION3*DIMENSION2}
+
+"""
+    const ReducedReducedMaxwellKernelType = SMatrix{DIMENSION2, DIMENSION2, 
+                                                    ComplexF64, DIMENSION2*DIMENSION2}
+
+Kernel type used in Maxwell's integral operators. This kernel type is typically
+obtained when `MaxwellKernelType` (size = 3x3) is multiplied by a jacobian
+matrix (size = 3x2) from the right and a transposed jacobian matrix (size = 2x3)
+from the left.
+"""
 const ReducedReducedMaxwellKernelType = SMatrix{DIMENSION2, DIMENSION2, 
                                                 ComplexF64, DIMENSION2*DIMENSION2}
 

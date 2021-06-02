@@ -1,3 +1,10 @@
+
+"""
+    compute_nystrom_maxwell_matrix(dimdata::IndirectDimData, formtype::NystromFormulationType)
+
+Computes and returns the matrix used in the Nystrom integral equation. Threads are used to speed up
+computations.
+"""
 function compute_nystrom_maxwell_matrix(dimdata::IndirectDimData, formtype::NystromFormulationType)
     V₀ = _NystromMaxwellOperator{formtype}(dimdata)
     V₁ = generate_interpolant_forwardmap_matrix(dimdata)
@@ -13,6 +20,11 @@ function compute_nystrom_maxwell_matrix(dimdata::IndirectDimData, formtype::Nyst
     return Array(M)
 end
 
+"""
+    compute_nystrom_maxwell_rhs(dimdata::IndirectDimData, field)
+
+Computes the right-hand-side of the Nystrom integral equation using the vector field `field`.
+"""
 function compute_nystrom_maxwell_rhs(dimdata::IndirectDimData, field)
     n_qnodes = get_number_of_qnodes(dimdata)
     @assert length(field) == n_qnodes
