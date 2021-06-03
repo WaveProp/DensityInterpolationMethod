@@ -98,12 +98,11 @@ end
 """
     print_threads_info()
 
-Prints in console the total number of threads and the thread ID of each thread.
+Prints in console the total number of threads.
 """
 function print_threads_info()
-    Threads.@threads for _ in 1:Threads.nthreads()
-        @info "Number of threads: $(Threads.nthreads()), thread ID: $(Threads.threadid())"
-    end 
+    @info "Number of threads: $(Threads.nthreads())"
+
 end
 
 """

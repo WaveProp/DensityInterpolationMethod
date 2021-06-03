@@ -24,6 +24,7 @@ export
     # Functions
     generate_dimdata
 
+include("blockmatrices.jl")
 include("lebedev.jl")
 include("maxwell.jl")
 include("dimdata.jl")

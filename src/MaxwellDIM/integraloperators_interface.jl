@@ -83,21 +83,28 @@ end
 
 """
     convert_operator_to_matrix(op::AbstractIntegralMatrixOperator{T}) where T
+    convert_operator_to_matrix!(matrix, op::AbstractIntegralMatrixOperator{T}) where T
 
-Converts `op::AbstractIntegralMatrixOperator{T}` into `matrix::Matrix{T}`. Threads 
+Converts `op::AbstractIntegralMatrixOperator{T}` into `matrix::Matrix{eltype(T)}`. Threads 
 are used to speed up computations.
 """
 function convert_operator_to_matrix(op::AbstractIntegralMatrixOperator{T}) where T
-    matrix = Matrix{T}(undef, size(op))
-    convert_operator_to_matrix!(matrix, op)
-    return matrix
+    psmatrix = generate_pseudoblockmatrix(T, size(op)...)
+    convert_operator_to_matrix!(psmatrix, op)
+    return get_matrix_from_pseudoblockmatrix(psmatrix)
 end
-function convert_operator_to_matrix!(matrix::Matrix{T}, op::AbstractIntegralMatrixOperator{T}) where T
-    @assert size(op) == size(matrix)
+function convert_operator_to_matrix!(matrix, op::AbstractIntegralMatrixOperator{T}) where T
+    psmatrix = wrap_into_pseudoblockmatrix(matrix, T)
+    convert_operator_to_matrix!(psmatrix, op)
+    return get_matrix_from_pseudoblockmatrix(psmatrix)
+end
+function convert_operator_to_matrix!(psmatrix::PseudoBlockMatrix, op::AbstractIntegralMatrixOperator{T}) where T
+    @assert eltype(psmatrix) == eltype(T)
+    @assert size(op).*size(T) == size(psmatrix)
     imax, jmax = size(op)
     Threads.@threads for j in 1:jmax
         for i in 1:imax
-            matrix[i, j] = op[i, j]
+            psmatrix[Block(i, j)] = op[i, j]
         end
     end
 end

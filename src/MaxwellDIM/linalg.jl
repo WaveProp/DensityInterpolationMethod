@@ -9,15 +9,14 @@ function compute_nystrom_maxwell_matrix(dimdata::IndirectDimData, formtype::Nyst
     V₀ = _NystromMaxwellOperator{formtype}(dimdata)
     V₁ = generate_interpolant_forwardmap_matrix(dimdata)
     n_qnodes = get_number_of_qnodes(dimdata)  
-    block_sizes = [DIMENSION2 for _ in 1:n_qnodes] # number of unknowns = (2 per qnode)
-    M = PseudoBlockArray{ComplexF64}(undef, block_sizes, block_sizes)
+    M = generate_pseudoblockmatrix(ReducedReducedMaxwellKernelType, n_qnodes, n_qnodes)
     # M = blockmatrix_to_matrix(V₀+V₁)
     Threads.@threads for j in 1:n_qnodes
         for i in 1:n_qnodes
             M[Block(i, j)] = V₀[i, j] + V₁[i, j]
         end
     end
-    return Array(M)
+    return get_matrix_from_pseudoblockmatrix(M)
 end
 
 """

@@ -60,7 +60,7 @@ struct DimData{F<:AbstractDimFormulation}
     Lmatrices::Vector{LowerTriangular{ComplexF64, Matrix{ComplexF64}}}
     Qmatrices::Vector{Matrix{ComplexF64}}
     # Θ matrices for fast evaluation of the interpolant `Φ`, for each qnode.
-    Θmatrices::Vector{Vector{MaxwellKernelType}}
+    Θmatrices::Vector{Matrix{ComplexF64}}
     # List of source points for constructing the
     # density interpolant `Φ`.
     src_list::Vector{Point3D}
@@ -109,17 +109,18 @@ function generate_dimdata(mesh::GenericMesh; qorder=2, k=1, α=1, β=1, n_src=14
     gquad = generate_globalquadrature(mesh, order=qorder)
     n_qnodes = get_number_of_qnodes(gquad)
     n_elements = get_number_of_elements(gquad)
-    
+    # compute source points
+    _, bbox_center, bbox_radius = compute_bounding_box(gquad)
+    src_radius = r * bbox_radius
+    src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
+    n_src = length(src_list)  # update number of source points
+    # initialize data
     density_coeff = Vector{ComplexPoint2D}(undef, n_qnodes)
     interpolant_coeff = [Vector{ComplexPoint3D}(undef, n_src) for _ in 1:n_elements]
     integral_op = Vector{ComplexPoint3D}(undef, n_qnodes)
     Lmatrices = [LowerTriangular(Matrix{ComplexF64}(undef, 0, 0)) for _ in 1:n_elements]
     Qmatrices = [Matrix{ComplexF64}(undef, 0, 0) for _ in 1:n_elements]
-    Θmatrices = [Vector{MaxwellKernelType}(undef, n_src) for _ in 1:n_qnodes]
-    # compute source points
-    _, bbox_center, bbox_radius = compute_bounding_box(gquad)
-    src_radius = r * bbox_radius
-    src_list = get_sphere_sources_lebedev(n_src, src_radius, bbox_center)
+    Θmatrices = [Matrix{ComplexF64}(undef, 0, 0) for _ in 1:n_qnodes]
     # reinterpreted data
     density_coeff_data = reinterpret(ComplexF64, density_coeff)
     interpolant_coeff_data = [reinterpret(ComplexF64, interpolant_coeff[i]) for i in eachindex(interpolant_coeff)]
@@ -174,15 +175,48 @@ function get_interpolant_coeff(dimdata::DimData, element_index)
 end
 
 """
-    get_interpolant_correction_matrices(dimdata::DimData, qnode_index)
+    get_src_node(dimdata::DimData, src_index)
 
-Returns the correction matrices Θᵢ for qnode `i = qnode_index`.
+Returns the source node `zₙ` for `n = src_index`.
 """
-function get_interpolant_correction_matrices(dimdata::DimData, qnode_index)
-    return dimdata.Θmatrices[qnode_index]
+function get_src_node(dimdata::DimData, src_index)
+    return dimdata.src_list[src_index]
 end
 
+"""
+    get_interpolant_correction_matrix(dimdata::DimData, qnode_index)
 
+Returns the (full) correction matrix `Θᵢ` for qnode `i = qnode_index`.
+"""
+function get_interpolant_correction_matrix(dimdata::DimData, qnode_index)
+    Θᵢ = dimdata.Θmatrices[qnode_index]
+    msg = """The size of the correction matrix is not correct. 
+    Maybe `store_interpolant_correction_matrix!` have not been called?"""
+    @assert (size(Θᵢ)==(DIMENSION3, DIMENSION3*get_number_of_srcs(dimdata))) msg
+    return Θᵢ
+end
+
+"""
+    store_interpolant_correction_matrix!(dimdata::DimData, Θᵢ, qnode_index)
+
+Stores the (full) correction matrix `Θᵢ` in dimdata, for qnode `i = qnode_index`.
+"""
+function store_interpolant_correction_matrix!(dimdata::DimData, Θᵢ, qnode_index)
+    @assert size(Θᵢ) == (DIMENSION3, DIMENSION3*get_number_of_srcs(dimdata))
+    dimdata.Θmatrices[qnode_index] = Θᵢ
+end
+
+"""
+    get_interpolant_correction_matrices(dimdata::DimData, qnode_index)
+
+Returns the correction matrices Θᵢ = [Θᵢ₁, ..., Θᵢₙ] for qnode `i = qnode_index`, 
+where `n` is the number of sources.
+"""
+function get_interpolant_correction_matrices(dimdata::DimData, qnode_index)
+    Θᵢ = get_interpolant_correction_matrix(dimdata, qnode_index)
+    Θᵢvector = reinterpret(MaxwellKernelType, view(Θᵢ, :))
+    return Θᵢvector
+end
 
 """
     get_number_of_qnodes(dimdata::DimData)

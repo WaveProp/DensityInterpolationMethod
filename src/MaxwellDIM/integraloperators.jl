@@ -21,47 +21,48 @@ local kernel-regularization performed around the diagonal (singular) entries by 
 contributions arising from the collocation density interpolants.')
 """
 function assemble_interpolant_correction_matrices!(dimdata::IndirectDimData)
-    n_qnodes = get_number_of_qnodes(dimdata)
-    n_sources = get_number_of_srcs(dimdata)
     # Assemble auxiliary matrices
     # [B]_{i, l} = γ₀G(yᵢ, zₗ) 
     # [C]_{i, l} = γ₁G(yᵢ, zₗ) 
-    Bmatrix = Matrix{MaxwellKernelType}(undef, n_qnodes, n_sources)
-    Cmatrix = Matrix{MaxwellKernelType}(undef, n_qnodes, n_sources)
-    _compute_correction_matrices_auxiliary_matrices!(dimdata, Bmatrix, Cmatrix)
+    Bmatrix, Cmatrix = _compute_correction_matrices_auxiliary_matrices(dimdata)
     # Compute correction matrix
     # TODO: implement fast evaluation of single and double layer operators
-    A = convert_operator_to_matrix(DoubleLayerOperator(dimdata))
-    Θmatrix = -0.5*Bmatrix - A*Bmatrix
-    convert_operator_to_matrix!(A, SingleLayerOperator(dimdata))
-    Θmatrix .-= A*Cmatrix
-    _compute_correction_matrices_store_matrix!(dimdata, Θmatrix)
+    t1 = @elapsed A = convert_operator_to_matrix(DoubleLayerOperator(dimdata))
+    t2 = @elapsed Θmatrix = -0.5*Bmatrix - A*Bmatrix
+    t3 = @elapsed convert_operator_to_matrix!(A, SingleLayerOperator(dimdata))
+    t4 = @elapsed Θmatrix .-= A*Cmatrix
+    t5 = @elapsed _compute_correction_matrices_store_matrix!(dimdata, Θmatrix)
+    @info "Tim" t1 t2 t3 t4 t5
 end
-function _compute_correction_matrices_auxiliary_matrices!(dimdata::IndirectDimData, Bmatrix, Cmatrix)
+function _compute_correction_matrices_auxiliary_matrices(dimdata::IndirectDimData)
     n_qnodes = get_number_of_qnodes(dimdata)
     n_sources = get_number_of_srcs(dimdata)
     k, _, _ = getparameters(dimdata)   # wavenumber
+    Bmatrix = generate_pseudoblockmatrix(MaxwellKernelType, n_qnodes, n_sources)
+    Cmatrix = generate_pseudoblockmatrix(MaxwellKernelType, n_qnodes, n_sources)
     for l in 1:n_sources
-        zₗ = dimdata.src_list[l]
+        zₗ = get_src_node(dimdata, l)
         for i in 1:n_qnodes
             qnodeᵢ = get_qnode(dimdata.gquad, i)
             yᵢ, _, _, nᵢ = get_qnode_data(qnodeᵢ)          
-            Bmatrix[i, l] = single_layer_kernel(yᵢ, zₗ, k, nᵢ)
-            Cmatrix[i, l] = double_layer_kernel(yᵢ, zₗ, k, nᵢ)
+            Bmatrix[Block(i, l)] = single_layer_kernel(yᵢ, zₗ, k, nᵢ)
+            Cmatrix[Block(i, l)] = double_layer_kernel(yᵢ, zₗ, k, nᵢ)
         end
     end
+    return get_matrix_from_pseudoblockmatrix(Bmatrix), get_matrix_from_pseudoblockmatrix(Cmatrix)
 end  
 function _compute_correction_matrices_store_matrix!(dimdata::IndirectDimData, Θmatrix)
     # Store rows of Θmatrix in dimdata
     n_qnodes = get_number_of_qnodes(dimdata)
     n_sources = get_number_of_srcs(dimdata)
+    @assert size(Θmatrix) == (DIMENSION3*n_qnodes, DIMENSION3*n_sources)
     for i in 1:n_qnodes
         # interpolant correction matrices
         # of qnode i
-        Θᵢ = get_interpolant_correction_matrices(dimdata, i)
-        for l in 1:n_sources
-            Θᵢ[l] = Θmatrix[i, l]
-        end
+        i1 = DIMENSION3*(i-1) + 1
+        i2 = DIMENSION3*i
+        Θᵢ = Θmatrix[i1:i2, :]
+        store_interpolant_correction_matrix!(dimdata, Θᵢ, i)
     end
 end
 
@@ -258,8 +259,7 @@ end
 function _generate_interpolant_forwardmap_matrix_qnode_matrices(dimdata::IndirectDimData, element_matrix, qnode_index)
     qnodeᵢ = get_qnode(dimdata.gquad, qnode_index)
     _, _, jacᵢ, _ = get_qnode_data(qnodeᵢ) # jacobian
-    Θᵢ = get_interpolant_correction_matrices(dimdata, qnode_index)
-    Θᵢmatrix = hcat(Θᵢ...)
+    Θᵢmatrix = get_interpolant_correction_matrix(dimdata, qnode_index)
     qnode_matrices = transpose(jacᵢ) * Θᵢmatrix * element_matrix
     # convert the full matrix into a list of smaller matrices
     return reinterpret(ReducedReducedMaxwellKernelType, @view qnode_matrices[:])
