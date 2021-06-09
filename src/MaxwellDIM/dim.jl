@@ -195,6 +195,39 @@ function _compute_integral_operator_integrand(dimdata::DimData, qnode_i, qnode_j
 end
 
 """
+    compute_exterior_nystrom_integral_operator!(dimdata::DimData)
+
+Computes the (exterior) Nystrom integral operator `C̃_{α,β}[ϕ]` at all quadrature points,
+using the density interpolation method. This operator includes the double layer jump 
+and the transposed jacobians.
+"""
+function compute_exterior_nystrom_integral_operator!(dimdata::DimData{F}) where F
+    _, α, _ = getparameters(dimdata)
+    # Set integral operator value to zero
+    reset_integral_operator_value!(dimdata)
+    # Compute density interpolant for all elements
+    compute_density_interpolant!(dimdata)
+    # Loop for computing the integral operator.
+    # (i, j) correspond to the indices of the 
+    # observation and source qnodes, respectively.
+    nystrom_iop = similar(dimdata.integral_op, ComplexPoint2D)
+    Threads.@threads for i in get_qnode_indices(dimdata.gquad)
+        # compute dimdata.integral_op[i]
+        _compute_integral_operator_innerloop!(dimdata, i)
+        # compute nystrom_iop[i]
+        qnode_i = get_qnode(dimdata.gquad, i)     # qnode i object
+        _, _, jacᵢ, _ = get_qnode_data(qnode_i)   # jacobian
+        if F === IndirectDimFormulation
+            ϕ = get_surface_density(dimdata, qnode_i)
+        elseif F === DirectDimFormulation
+            ϕ, _ = get_surface_density(dimdata, qnode_i)
+        end
+        nystrom_iop[i] = transpose(jacᵢ) * (α*ϕ/2 + dimdata.integral_op[i])
+    end
+    return nystrom_iop
+end
+
+"""
     compute_potencial(dimdata::DimData, xlist::AbstractArray{Point3D})
     compute_potencial(dimdata::DimData, x)
 

@@ -24,7 +24,7 @@ end
 
 Computes the right-hand-side of the Nystrom integral equation using the vector field `field`.
 """
-function compute_nystrom_maxwell_rhs(dimdata::IndirectDimData, field)
+function compute_nystrom_maxwell_rhs(dimdata::DimData, field)
     n_qnodes = get_number_of_qnodes(dimdata)
     @assert length(field) == n_qnodes
     rhs = similar(field, ComplexPoint2D)
@@ -43,6 +43,7 @@ end
 
 function solve_nystrom_GMRES!(dimdata::IndirectDimData, A, b; kwargs...)
     copyto!(dimdata.density_coeff_data, b)
-    gmres!(dimdata.density_coeff_data, A, b; kwargs...)
+    out = gmres!(dimdata.density_coeff_data, A, b; kwargs...)
     compute_density_interpolant!(dimdata) # for future evaluations
+    return out
 end

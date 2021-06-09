@@ -21,7 +21,7 @@ function convergence_nystrom(eval_points, HMAX, QUADRATURE_ORDER)
     n_src = 26  # number of Lebedev sources
     r_factor = 5  # radius factor for Lebedev sources
     α = 1       # DIM α parameter
-    β = 1im      # DIM β parameter
+    β = 0      # DIM β parameter
     dimdata = generate_dimdata(mesh, qorder=QUADRATURE_ORDER, k=k,
                                 n_src=n_src, α=α, β=β, r=r_factor);
     DM.initialize!(dimdata)     
@@ -41,8 +41,9 @@ function convergence_nystrom(eval_points, HMAX, QUADRATURE_ORDER)
     @info "Computing matrix..."
     @info "Done."
     M = DM.compute_nystrom_maxwell_matrix(dimdata, DM.ExteriorNystromFormulation)
-    @info "Solving..."
-    DM.solve_nystrom_LU!(dimdata, M, rhs)
+    nUnk = get_number_of_qnodes(dimdata) * DIMENSION2
+    @info "Solving..." nUnk
+    DM.solve_nystrom_GMRES!(dimdata, M, rhs, log=true, verbose=true, maxiter=100, restart=150, abstol=1e-6)
     @info "Done."
 
     # Evaluate errors on a sphere
@@ -54,7 +55,6 @@ function convergence_nystrom(eval_points, HMAX, QUADRATURE_ORDER)
 
     # print results
     nElem = get_number_of_elements(dimdata.gquad)
-    nUnk = get_number_of_qnodes(dimdata) * DIMENSION2
     h = dimdata.hmax
     QO = QUADRATURE_ORDER
     @info "results: h= $h, nElem= $nElem, nUnk= $nUnk, QO= $QO, error= $error\n"
@@ -67,13 +67,13 @@ r = 5  # sphere radius
 θrange = range(0, 2π, length=npoints)[1:end-1]
 ϕrange = range(0, π, length=npoints)[1:end-1]
 eval_points = [Point3D(r*sin(ϕ)*cos(θ), 
-                r*sin(ϕ)*sin(θ), 
-                r*cos(ϕ)) for ϕ in ϕrange for θ in θrange];
+                       r*sin(ϕ)*sin(θ), 
+                       r*cos(ϕ)) for ϕ in ϕrange for θ in θrange];
 
 ##
 HMAX = [1, 0.8, 0.6, 0.5, 0.45, 0.3, 0.25]
 HMAX = [0.24, 0.22]
-QUADRATURE_ORDER = 4
+QUADRATURE_ORDER = 2
 for h in HMAX
     convergence_nystrom(eval_points, h, QUADRATURE_ORDER)
 end

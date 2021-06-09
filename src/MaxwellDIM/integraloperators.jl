@@ -32,7 +32,7 @@ function assemble_interpolant_correction_matrices!(dimdata::IndirectDimData)
     t3 = @elapsed convert_operator_to_matrix!(A, SingleLayerOperator(dimdata))
     t4 = @elapsed Θmatrix .-= A*Cmatrix
     t5 = @elapsed _compute_correction_matrices_store_matrix!(dimdata, Θmatrix)
-    @info "Tim" t1 t2 t3 t4 t5
+    @info "Correction matrix elapsed times (seg)" t1 t2 t3 t4 t5
 end
 function _compute_correction_matrices_auxiliary_matrices(dimdata::IndirectDimData)
     n_qnodes = get_number_of_qnodes(dimdata)
