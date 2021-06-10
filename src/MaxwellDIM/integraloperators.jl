@@ -220,27 +220,35 @@ end
 Assembles the operator `V₁` in (sparse) matrix form, used in the Nystrom integral equation, 
 where `V₁` is the interpolant (correction) operator.
 """
-function generate_interpolant_forwardmap_matrix(dimdata::IndirectDimData)
+function generate_interpolant_forwardmap_matrix(dimdata::IndirectDimData; blockmatrix=true)
     # construct sparse array
     I = Int64[]
     J = Int64[]
-    V = ReducedReducedMaxwellKernelType[]
+    if blockmatrix
+        V = ReducedReducedMaxwellKernelType[]
+        n_unknowns = get_number_of_qnodes(dimdata) 
+        # function for storing matrix entries
+        store_entry! = _generate_interpolant_forwardmap_matrix_store_entry_block!
+    else
+        V = ComplexF64[]
+        n_unknowns = DIMENSION2 * get_number_of_qnodes(dimdata) 
+        # function for storing scalar entries
+        store_entry! = _generate_interpolant_forwardmap_matrix_store_entry!
+    end
     for element_index in get_element_indices(dimdata.gquad)
         inelement_qnode_indices = get_inelement_qnode_indices(dimdata.gquad, element_index)
         element_matrix = _generate_interpolant_forwardmap_matrix_element_matrix(dimdata, element_index, inelement_qnode_indices)
         for i in inelement_qnode_indices
             qnode_matrices = _generate_interpolant_forwardmap_matrix_qnode_matrices(dimdata, element_matrix, i)
             for (j, qnode_matrix) in zip(inelement_qnode_indices, qnode_matrices)
-                push!(I, i)
-                push!(J, j)
-                push!(V, qnode_matrix)
+                store_entry!(I, J, V, i, j, qnode_matrix)
             end
         end
     end
-    n_qnodes = get_number_of_qnodes(dimdata)
-    return sparse(I, J, V, n_qnodes, n_qnodes)
+    return sparse(I, J, V, n_unknowns, n_unknowns)
 end
 function _generate_interpolant_forwardmap_matrix_element_matrix(dimdata::IndirectDimData, element_index, inelement_qnode_indices)
+    # generate element matrix
     n_qnodes = length(inelement_qnode_indices)   # number of qnodes in element
     Lmatrix = dimdata.Lmatrices[element_index]
     Qmatrix = dimdata.Qmatrices[element_index]
@@ -257,10 +265,29 @@ function _generate_interpolant_forwardmap_matrix_element_matrix(dimdata::Indirec
     return element_matrix
 end
 function _generate_interpolant_forwardmap_matrix_qnode_matrices(dimdata::IndirectDimData, element_matrix, qnode_index)
+    # generate qnode matrix
     qnodeᵢ = get_qnode(dimdata.gquad, qnode_index)
     _, _, jacᵢ, _ = get_qnode_data(qnodeᵢ) # jacobian
     Θᵢmatrix = get_interpolant_correction_matrix(dimdata, qnode_index)
     qnode_matrices = transpose(jacᵢ) * Θᵢmatrix * element_matrix
     # convert the full matrix into a list of smaller matrices
     return reinterpret(ReducedReducedMaxwellKernelType, @view qnode_matrices[:])
+end
+function _generate_interpolant_forwardmap_matrix_store_entry_block!(I, J, V, i, j, vmatrix::ReducedReducedMaxwellKernelType)
+    # store the full matrix
+    push!(I, i)
+    push!(J, j)
+    push!(V, vmatrix)
+end
+function _generate_interpolant_forwardmap_matrix_store_entry!(I, J, V, i, j, vmatrix::ReducedReducedMaxwellKernelType)
+    # store each entry of the matrix
+    for m in 1:2
+        jglobal = 2*(j-1) + m
+        for n in 1:2
+            iglobal = 2*(i-1) + n
+            push!(I, iglobal)
+            push!(J, jglobal)
+            push!(V, vmatrix[n, m])
+        end
+    end
 end
