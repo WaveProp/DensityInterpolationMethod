@@ -16,7 +16,7 @@ Base.getindex(b::UniformBlockSize, ::Int64) = b.blocksize
 Base.size(b::UniformBlockSize) = (b.len,)
 
 """
-generate_pseudoblockmatrix(blocktype::StaticMatrix, n, m)
+    generate_pseudoblockmatrix(blocktype::StaticMatrix, n, m)
 
 Generates an uninitialized PseudoBlockMatrix of size (`n` blocks) × (`m` blocks) with
 blocks of type `blocktype`.

@@ -200,7 +200,7 @@ The magnetic field is given by `1/(im*k) * ∇ × Gₖ(x, y) * ϕy`, where `Gₖ
 Green tensor.
 """
 function electric_dipole_magnetic_field(x, y, k, ϕy)
-    1/(im*k)*_curl_green_tensor(x, y, k, ϕy)
+    result = 1/(im*k)*_curl_green_tensor(x, y, k, ϕy)
     return result
 end
 
