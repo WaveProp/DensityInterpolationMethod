@@ -103,3 +103,19 @@ function single_doublelayer_dim(gquad::GlobalQuadrature; k, n_src)
     axpy!(true,δD,D)  # D = D + δD
     return S, D
 end
+
+function diagonal_ncross_jac_matrix(gquad)
+    qnodes = get_qnodes(gquad)
+    nmatrix = Diagonal([cross_product_matrix(q.normal) for q in qnodes])
+    jmatrix = Diagonal([q.jacobian for q in qnodes])
+    return nmatrix, jmatrix
+end
+
+function assemble_dim_exterior_nystrom_matrix(gquad, α, β, D, S)
+    N, J = diagonal_ncross_jac_matrix(gquad)
+    Jm = diagonalblockmatrix_to_matrix(J.diag)
+    n_qnodes = get_number_of_qnodes(gquad)
+    M = Matrix{ComplexF64}(undef, 2*n_qnodes, 2*n_qnodes)
+    M .= transpose(Jm)*blockmatrix_to_matrix(0.5*α*I + α*D + β*S*N)*Jm
+    return M
+end
