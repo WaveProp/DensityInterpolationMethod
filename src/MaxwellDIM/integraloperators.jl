@@ -171,10 +171,9 @@ function evaluate_nystrom_maxwell_operator(dimdata::IndirectDimData, formtype::N
                                            qnode_index_i, qnode_index_j)::ReducedReducedMaxwellKernelType
     # qnode i data
     qnode_i = get_qnode(dimdata.gquad, qnode_index_i)  
-    _, _, jacᵢ, _ = get_qnode_data(qnode_i) 
     # combined layer operator
     CL = evaluate_combined_layer_operator(dimdata, formtype, qnode_index_i, qnode_index_j) 
-    return transpose(jacᵢ)*CL
+    return dual_jacobian(qnode_i)*CL
 end
 
 """
@@ -207,11 +206,10 @@ been called.
 """
 function evaluate_nystrom_interpolant_forwardmap(dimdata::IndirectDimData, qnode_index_i)::ComplexPoint2D
     # qnode i data
-    qnode_i = get_qnode(dimdata.gquad, qnode_index_i)  
-    _, _, jacᵢ, _ = get_qnode_data(qnode_i) 
+    qnode_i = get_qnode(dimdata.gquad, qnode_index_i) 
     # interpolant forward map
     interpolant_forwardmap_i = evaluate_interpolant_forwardmap(dimdata, qnode_index_i)
-    return transpose(jacᵢ)*interpolant_forwardmap_i
+    return dual_jacobian(qnode_i)*interpolant_forwardmap_i
 end
 
 """
@@ -267,9 +265,8 @@ end
 function _generate_interpolant_forwardmap_matrix_qnode_matrices(dimdata::IndirectDimData, element_matrix, qnode_index)
     # generate qnode matrix
     qnodeᵢ = get_qnode(dimdata.gquad, qnode_index)
-    _, _, jacᵢ, _ = get_qnode_data(qnodeᵢ) # jacobian
     Θᵢmatrix = get_interpolant_correction_matrix(dimdata, qnode_index)
-    qnode_matrices = transpose(jacᵢ) * Θᵢmatrix * element_matrix
+    qnode_matrices = dual_jacobian(qnodeᵢ) * Θᵢmatrix * element_matrix
     # convert the full matrix into a list of smaller matrices
     return reinterpret(ReducedReducedMaxwellKernelType, @view qnode_matrices[:])
 end

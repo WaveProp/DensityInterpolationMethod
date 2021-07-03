@@ -28,6 +28,7 @@ export
     get_number_of_lnodes,
     get_number_of_qnodes,
     get_number_of_elements,
+    dual_jacobian,
     get_qnode,
     get_qnodes,
     get_qnode_data,

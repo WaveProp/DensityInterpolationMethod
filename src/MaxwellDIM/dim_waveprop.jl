@@ -108,14 +108,16 @@ function diagonal_ncross_jac_matrix(gquad)
     qnodes = get_qnodes(gquad)
     nmatrix = Diagonal([cross_product_matrix(q.normal) for q in qnodes])
     jmatrix = Diagonal([q.jacobian for q in qnodes])
-    return nmatrix, jmatrix
+    dual_jmatrix = Diagonal([dual_jacobian(q) for q in qnodes])
+    return nmatrix, jmatrix, dual_jmatrix
 end
 
 function assemble_dim_exterior_nystrom_matrix(gquad, α, β, D, S)
-    N, J = diagonal_ncross_jac_matrix(gquad)
+    N, J, dualJ = diagonal_ncross_jac_matrix(gquad)
     Jm = diagonalblockmatrix_to_matrix(J.diag)
+    dualJm = diagonalblockmatrix_to_matrix(dualJ.diag)
     n_qnodes = get_number_of_qnodes(gquad)
     M = Matrix{ComplexF64}(undef, 2*n_qnodes, 2*n_qnodes)
-    M .= transpose(Jm)*blockmatrix_to_matrix(0.5*α*I + α*D + β*S*N)*Jm
+    M .= dualJm*blockmatrix_to_matrix(0.5*α*I + α*D + β*S*N)*Jm
     return M
 end

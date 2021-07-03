@@ -216,13 +216,12 @@ function compute_exterior_nystrom_integral_operator!(dimdata::DimData{F}) where 
         _compute_integral_operator_innerloop!(dimdata, i)
         # compute nystrom_iop[i]
         qnode_i = get_qnode(dimdata.gquad, i)     # qnode i object
-        _, _, jacᵢ, _ = get_qnode_data(qnode_i)   # jacobian
         if F === IndirectDimFormulation
             ϕ = get_surface_density(dimdata, qnode_i)
         elseif F === DirectDimFormulation
             ϕ, _ = get_surface_density(dimdata, qnode_i)
         end
-        nystrom_iop[i] = transpose(jacᵢ) * (α*ϕ/2 + dimdata.integral_op[i])
+        nystrom_iop[i] = dual_jacobian(qnode_i) * (α*ϕ/2 + dimdata.integral_op[i])
     end
     return nystrom_iop
 end

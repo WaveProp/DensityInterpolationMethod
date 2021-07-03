@@ -30,8 +30,8 @@ function compute_nystrom_maxwell_rhs(dimdata::DimData, field)
     rhs = similar(field, ComplexPoint2D)
     for i in 1:n_qnodes
         qnode = get_qnode(dimdata.gquad, i)
-        _, _, jacᵢ, ni = get_qnode_data(qnode)
-        rhs[i] = transpose(jacᵢ) * cross(ni, field[i])
+        _, _, _, ni = get_qnode_data(qnode)
+        rhs[i] = dual_jacobian(qnode) * cross(ni, field[i])
     end
     return reinterpret(ComplexF64, rhs)
 end

@@ -39,6 +39,23 @@ function get_qnode_data(qnode::QNode)
 end
 
 """
+    dual_jacobian(qnode::QNode)
+
+Returns the dual jacobian `djac` of `qnode`. Basically, `djac = pinv(qnode.jacobian)`.
+"""
+function dual_jacobian(qnode::QNode)
+    t1 = qnode.jacobian[:,1]
+    t2 = qnode.jacobian[:,2]
+    n = qnode.normal
+    V = norm(cross(t1, t2))
+    e1 = transpose(cross(t2, n) / V)
+    e2 = transpose(cross(n, t1) / V)
+    djac = vcat(e1, e2)
+    #return transpose(qnode.jacobian)
+    return djac
+end
+
+"""
     struct GlobalQuadrature
 
 Structure that contains the concrete information of the quadrature,
@@ -92,7 +109,6 @@ function _add_element_to_gquad(gquad::GlobalQuadrature, el, qrule, qnode_index)
     else
         element_index = 1
     end
-
     # Save data in GlobalQuadrature
     qdata = get_quadrature_data(qrule, el)
     initial_index = qnode_index
