@@ -6,7 +6,11 @@ function get_single_and_double_layer_operators(gquad, k)
         qnode_j = get_qnode(gquad, j)
         yj, wj, _, _ = get_qnode_data(qnode_j)  
         for i in 1:n_qnodes
-            i == j && continue
+            if i == j
+                S[i, j] = zero(MaxwellKernelType)
+                D[i, j] = zero(MaxwellKernelType)
+                continue
+            end
             qnode_i = get_qnode(gquad, i)
             yi, _, _, ni = get_qnode_data(qnode_i)
             S[i, j] = wj*single_layer_kernel(yi, yj, k, ni)  
