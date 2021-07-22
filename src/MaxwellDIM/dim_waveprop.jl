@@ -125,3 +125,60 @@ function assemble_dim_exterior_nystrom_matrix(gquad, α, β, D, S)
     M .= dualJm*blockmatrix_to_matrix(0.5*α*I + α*D + β*S*N)*Jm
     return M
 end
+
+function maxwellCFIE_SingleLayerPotencial(k, gquad)
+    function out(σ, x)
+        iter = zip(gquad.qnodes,σ)
+        return sum(iter) do (qnode,σ)
+            w = qnode.weigth
+            y = qnode.qnode
+            _green_tensor(x, y, k)*σ*w
+        end
+    end
+    return out
+end
+function maxwellCFIE_DoubleLayerPotencial(k, gquad)
+    function out(σ, x)
+        iter = zip(gquad.qnodes,σ)
+        return sum(iter) do (qnode,σ)
+            w = qnode.weigth
+            y = qnode.qnode
+            _curl_green_tensor(x, y, k)*σ*w
+        end
+    end
+    return out
+end
+
+function solve_LU(A::AbstractMatrix{T}, σ::AbstractVector{V}) where {T,V}
+    Amat    = blockmatrix_to_matrix(A)
+    σ_vec   = reinterpret(eltype(V),σ)
+    vals_vec = Amat\σ_vec
+    vals    = reinterpret(V,vals_vec) |> collect
+    return vals
+end
+function solve_LU(A::Matrix{ComplexF64}, σ::AbstractVector{V}) where {V}
+    Amat    = A
+    σ_vec   = reinterpret(eltype(V),σ)
+    vals_vec = Amat\σ_vec
+    vals    = reinterpret(V,vals_vec) |> collect
+    return vals
+end
+
+function solve_GMRES(A::Matrix{ComplexF64}, σ::AbstractVector{V}, args...; kwargs...) where {V}
+    σ_vec   = reinterpret(eltype(V),σ)
+    vals_vec = copy(σ_vec)
+    gmres!(vals_vec, A, σ_vec, args...; kwargs...)
+    vals = reinterpret(V,vals_vec) 
+    return vals
+end
+
+function get_blockdiag_precond(S, J, dualJ, L)
+    # FIX: not correct!
+    Jm = diagonalblockmatrix_to_matrix(J.diag)
+    dualJm = diagonalblockmatrix_to_matrix(dualJ.diag)
+    ref_matrix = dualJm * blockmatrix_to_matrix(S) * Jm
+    mask = ref_matrix .!= 0
+    P = mask .* L
+    @info typeof(P)
+    return lu!(P)
+end
