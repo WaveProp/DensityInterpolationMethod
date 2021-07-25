@@ -13,6 +13,11 @@ using StaticArrays
 using BlockArrays
 using IterativeSolvers
 
+# for parametric surfaces and NystromMesh
+import WavePropBase: Geometry.Domain, boundary
+import ParametricSurfaces: meshgen, Sphere
+import Nystrom
+
 using DensityInterpolationMethod.Mesh
 using DensityInterpolationMethod.Integration
 using DensityInterpolationMethod.Utils
@@ -34,4 +39,5 @@ include("integraloperators.jl")
 include("integraloperators_interface.jl")
 include("linalg.jl")
 include("dim_waveprop.jl")
+include("parametricsurfaces.jl")
 end

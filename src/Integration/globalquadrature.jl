@@ -68,12 +68,12 @@ struct GlobalQuadrature
     # Each element correspond to a vector `[i₁, i₂, ..., iₙ]` which 
     # contains the indices of the `n` qnodes of the element.
     elements::Vector{Vector{Int64}}     
-    # Constructor
-    function GlobalQuadrature(n_qnodes, n_elements)
-        qnodes = Vector{QNode}(undef, n_qnodes)
-        elements = Vector{Vector{Int64}}(undef, n_elements)
-        return new(qnodes, elements)
-    end
+end
+
+function GlobalQuadrature(n_qnodes::Integer, n_elements::Integer)
+    qnodes = Vector{QNode}(undef, n_qnodes)
+    elements = Vector{Vector{Int64}}(undef, n_elements)
+    return GlobalQuadrature(qnodes, elements)
 end
 
 """
