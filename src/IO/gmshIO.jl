@@ -133,3 +133,21 @@ function _reshape_qrule_data(x, w)
     wdata = SVector{n_qnodes}(w)
     return xdata, wdata
 end
+
+"""
+    gmsh_sphere(;radius=0.5,center=(0,0,0),dim=3,h=radius/10,order=1)
+
+Use `gmsh` API to generate a sphere and return `mesh::GenericMesh`.
+"""
+function gmsh_sphere(;radius=0.5,center=(0., 0., 0.),h=radius/10,order=1,verbosity=true)
+    gmsh.initialize()
+    if !verbosity _gmsh_set_verbosity(verbosity) end
+    _gmsh_set_meshsize(h)
+    _gmsh_set_meshorder(order)
+    gmsh.model.occ.addSphere(center..., radius)
+    gmsh.model.occ.synchronize()
+    gmsh.model.mesh.generate(DIMENSION2) # mesh surfaces
+    mesh = _initialize_mesh()
+    gmsh.finalize()
+    return mesh
+end
