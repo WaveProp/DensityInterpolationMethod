@@ -156,6 +156,19 @@ function assemble_dim_exterior_nystrom_matrix(gquad, α, β, D::PseudoBlockMatri
     M .= dualJm*(0.5*α*I + α*Dm + β*Sm*Nm)*Jm
     return M
 end
+function assemble_direct_exterior_nystrom_matrix(gquad, k, η, D::PseudoBlockMatrix, S::PseudoBlockMatrix)
+    N, J, dualJ = diagonal_ncross_jac_matrix(gquad)
+    Jm = diagonalblockmatrix_to_matrix(J.diag)
+    dualJm = diagonalblockmatrix_to_matrix(dualJ.diag)
+    Nm = diagonalblockmatrix_to_matrix(N.diag)
+    Sm = get_matrix_from_pseudoblockmatrix(S)
+    Dm = get_matrix_from_pseudoblockmatrix(D)
+    n_qnodes = get_number_of_qnodes(gquad)
+    M = Matrix{ComplexF64}(undef, 2*n_qnodes, 2*n_qnodes)
+    M .= dualJm*(η*im*k*Nm*Sm + (1-η)*(0.5I + Dm))*Jm
+    return M
+end
+
 
 function maxwellCFIE_SingleLayerPotencial(k, gquad)
     function out(σ, x)
