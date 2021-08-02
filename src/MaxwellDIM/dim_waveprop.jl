@@ -216,13 +216,35 @@ function solve_GMRES(A::Matrix{ComplexF64}, σ::AbstractVector{V}, args...; kwar
     return vals
 end
 
-function get_blockdiag_precond(S, J, dualJ, L)
-    # FIX: not correct!
-    Jm = diagonalblockmatrix_to_matrix(J.diag)
-    dualJm = diagonalblockmatrix_to_matrix(dualJ.diag)
-    ref_matrix = dualJm * blockmatrix_to_matrix(S) * Jm
-    mask = ref_matrix .!= 0
-    P = mask .* L
-    @info typeof(P)
-    return lu!(P)
+function get_blockdiag_precond(gquad, L)
+    n_qnodes = get_number_of_qnodes(gquad)
+    n_dof = size(L, 1)
+    dof_per_qnode = n_dof / n_qnodes
+    # Boolean mask
+    Is = Int64[]
+    Js = Int64[]
+    for el in gquad.elements
+        for qnode_i in el
+            for qnode_j in el
+                _add_qnode_entries!(Is, Js, qnode_i, qnode_j, dof_per_qnode)
+            end
+        end
+    end
+    @assert length(Is) == length(Js)
+    Vs = ones(Bool, length(Is))
+    Pb = sparse(Is, Js, Vs, n_dof, n_dof)
+    # Block diagonal
+    Pl = spzeros(ComplexF64, n_dof, n_dof)
+    Pl[Pb] = L[Pb]
+    return lu(Pl)
+end
+function _add_qnode_entries!(Is, Js, qnode_i, qnode_j, dof_per_qnode)
+    dof_index_i = dof_per_qnode * (qnode_i - 1)
+    dof_index_j = dof_per_qnode * (qnode_j - 1)
+    for i in 1:dof_per_qnode
+        for j in 1:dof_per_qnode
+            push!(Is, dof_index_i+i)
+            push!(Js, dof_index_j+j)
+        end
+    end
 end
