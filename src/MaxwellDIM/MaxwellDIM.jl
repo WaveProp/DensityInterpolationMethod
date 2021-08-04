@@ -12,6 +12,7 @@ using SparseArrays
 using StaticArrays
 using BlockArrays
 using IterativeSolvers
+using Lebedev
 
 # for parametric surfaces and NystromMesh
 import WavePropBase: Geometry.Domain, boundary
