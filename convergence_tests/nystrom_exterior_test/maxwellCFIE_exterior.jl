@@ -17,7 +17,7 @@ print_threads_info()
 
 ##
 k = 3.3
-sph_radius = 1
+sph_radius = 2
 Γ = DM.parametric_sphere(;radius=sph_radius)
 
 # evaluation mesh
@@ -33,24 +33,23 @@ eval_mesh = [Point3D(eval_r*sin(ϕ)*cos(θ),
 # exact solution
 xs   = SVector(0.1,0.2,0.3) 
 c    = SVector(1+im,-2.,3.)
-#G    = (x,y) -> DM._green_tensor(x, y, k)
-#γₒG  = (qnode) -> DM.single_layer_kernel(qnode.qnode, xs, k, qnode.normal, c);
-G    = (x,y) -> DM._curl_green_tensor(x, y, k)
-γₒG  = (qnode) -> DM.double_layer_kernel(qnode.qnode, xs, k, qnode.normal, c);
+G    = (x,y) -> DM._green_tensor(x, y, k)
+γₒG  = (qnode) -> DM.single_layer_kernel(qnode.qnode, xs, k, qnode.normal, c);
+#G    = (x,y) -> DM._curl_green_tensor(x, y, k)
+#γₒG  = (qnode) -> DM.double_layer_kernel(qnode.qnode, xs, k, qnode.normal, c);
 E    = (dof) -> G(dof,xs)*c
 exa  = E.(eval_mesh);
 
 ## Indirect formulation
-n_src = 50         # number of interpolant sources
+n_src = 38         # number of interpolant sources
 α = 1              # MFIE constant
-β = 0              # EFIE constant
+β = im*k/sph_radius              # EFIE constant
 qorder = 5         # quadrature order 
 ndofs = Float64[]
 errs = Float64[]
-iterative = true;
+iterative = false;
 ##
-# Load a mesh with quadratic elements
-for n in [24]
+for n in [2,4,8,12,16]
     global gquad
     gquad = DM.nystrom_gquad(Γ; n, order=qorder)
     γ₀E   = γₒG.(qnode for qnode in gquad.qnodes)
@@ -85,7 +84,7 @@ end
 ## Plot
 sqrt_ndofs = sqrt.(ndofs)
 fig = plot(sqrt_ndofs,errs,xscale=:log10,yscale=:log10,m=:o,label="error",lc=:black)
-title = "k=$k, α=$α, β=$β, qorder=$qorder"
+title = "k=$k, α=$α, β=$β, qorder=$qorder, R=$sph_radius"
 plot!(xlabel="√ndofs",ylabel="error",title=title)
 for p in 1:5
     cc = errs[end]*sqrt_ndofs[end]^p

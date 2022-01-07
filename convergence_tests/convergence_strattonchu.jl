@@ -2,6 +2,7 @@ using StaticArrays
 using LinearAlgebra
 using Statistics
 using BenchmarkTools
+using Plots
 using DensityInterpolationMethod
 using DensityInterpolationMethod.Utils
 using DensityInterpolationMethod.IO
@@ -44,19 +45,64 @@ function convergence_strattonchu(ELEM_ORDER, HMAX, QUADRATURE_ORDER, k, n_src, r
     error_list = norm.(result.-γ₀Efields)/maximum(norm.(γ₀Efields))
     error_max = maximum(error_list)
     error_95 = quantile(error_list, 0.95)
-    println("""h: $(dimdata.hmax), nElem: $(get_number_of_elements(dimdata.gquad)), k: $k, EO: $ELEM_ORDER, QO: $QUADRATURE_ORDER, 
-    error_max: $error_max, error_95: $error_95""")
+    nqnodes = get_number_of_qnodes(dimdata)
+    return dimdata.hmax, nqnodes, error_max
+
+    #println("""h: $(dimdata.hmax), nElem: $(get_number_of_elements(dimdata.gquad)), k: $k, EO: $ELEM_ORDER, QO: $QUADRATURE_ORDER, 
+    #error_max: $error_max, error_95: $error_95""")
 end
 
 ##
 ELEM_ORDER = 2
-HMAX = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3]
-QUADRATURE_ORDER = 2
-k = 1     # Wavenumber
+HMAX = [0.5, 0.4, 0.3, 0.2]
+QUADRATURE_ORDER = 4
+k = 3.3     # Wavenumber
 n_src = 26  # number of Lebedev sources
 r_factor = 5  # radius factor for Lebedev sources
-for h in HMAX
-    convergence_strattonchu(ELEM_ORDER, h, QUADRATURE_ORDER, k, n_src, r_factor)
+h_list = zeros(length(HMAX))
+nqnodes_list = zeros(length(HMAX))
+err_list = zeros(length(HMAX))
+for i in eachindex(HMAX)
+    H = HMAX[i]
+    h, nqnodes, err = convergence_strattonchu(ELEM_ORDER, H, QUADRATURE_ORDER, k, n_src, r_factor)
+    h_list[i] = h
+    nqnodes_list[i] = nqnodes
+    err_list[i] = err
+    @info "\n" h nqnodes err
 end
 
+## Plot 1
+fig = plot(xlabel="sqrt{N}",ylabel="error",title="Stratton-Chu identity k=$k",
+           xscale=:log10,yscale=:log10,framestyle=:box,xtickfontsize=10,ytickfontsize=10)
+# retrieve data
+ndofs = nqnodes_list
+errs  = err_list
+sqrt_ndofs = sqrt.(ndofs)
+# plot
+p = 3 #(sqrt(8*qnumber+1)-1)/2
+isinteger(p) || @warn "p is not an integer" 
+p = Int(p)
+plot!(fig,sqrt_ndofs,errs,m=:o,label="p=$p")
+# reference slopes
+s = p-1 #p-1 # theoretical slope
+cc = errs[end]*sqrt_ndofs[end]^s
+plot!(fig,sqrt_ndofs,cc./sqrt_ndofs.^s,ls=:dash,lw=2,label="")
+display(fig)
+
+## Plot 2
+fig = plot(xlabel="h",ylabel="error",title="Stratton-Chu identity k=$k",
+           xscale=:log10,yscale=:log10,framestyle=:box,xtickfontsize=10,ytickfontsize=10)
+# retrieve data
+errs  = err_list
+sqrt_ndofs = h_list
+# plot
+p = 3 #(sqrt(8*qnumber+1)-1)/2
+isinteger(p) || @warn "p is not an integer" 
+p = Int(p)
+plot!(fig,sqrt_ndofs,errs,m=:o,label="p=$p")
+# reference slopes
+s = p-1 #p-1 # theoretical slope
+cc = errs[end]*sqrt_ndofs[end]^(-s)
+plot!(fig,sqrt_ndofs,cc./sqrt_ndofs.^(-s),ls=:dash,lw=2,label="")
+display(fig)
 

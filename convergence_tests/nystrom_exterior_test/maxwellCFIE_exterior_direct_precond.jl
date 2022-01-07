@@ -17,6 +17,7 @@ print_threads_info()
 
 ##
 k = 3.3
+imk = im*k
 sph_radius = 2
 Γ = DM.parametric_sphere(;radius=sph_radius)
 
@@ -49,17 +50,20 @@ iterative = true;
 ##
 # Load a mesh with quadratic elements
 for n in [4]
-    global gquad
     gquad = DM.nystrom_gquad(Γ; n, order=qorder)
     γ₀E = γₒG.(qnode for qnode in gquad.qnodes)      # n × E
     γ₀H = γₒGh.(qnode for qnode in gquad.qnodes)     # n × H
     S,D = DM.single_doublelayer_dim(gquad; k, n_src)
     N,J,dualJ = DM.diagonal_ncross_jac_matrix(gquad)
-    rhs = dualJ*((1-η)*γ₀H + η*N*γ₀E)
+    Sp,_ = DM.single_doublelayer_dim(gquad; k=imk, n_src)  # preconditioner
+    S = im*k*S      # scale
+    Sp = im*imk*Sp  # scale
+    #rhs = dualJ*((1-η)*γ₀H + η*N*γ₀E)
+    rhs_EFIE = reinterpret(ComplexPoint3D, Sp.blocks*reinterpret(ComplexF64, γ₀E))
+    rhs = dualJ*((1-η)*γ₀H + η*rhs_EFIE)
 
     @info "Assembling matrix..."
-    global L
-    L = DM.assemble_direct_exterior_nystrom_matrix(gquad, k, η, D, S)
+    L = DM.assemble_direct_exterior_nystrom_matrix_precond(gquad, k, η, D, S, Sp)
     @info "Solving..."
     if iterative
         Pl = DM.get_blockdiag_precond(gquad, L) 
@@ -83,7 +87,7 @@ end
 ## Plot
 sqrt_ndofs = sqrt.(ndofs)
 fig = plot(sqrt_ndofs,errs,xscale=:log10,yscale=:log10,m=:o,label="error",lc=:black)
-title = "CFIE direct, k=$k, η=$η, qorder=$qorder,\n 160-200 GMRES iter"
+title = "CFIE direct, k=$k, η=$η, qorder=$qorder"
 plot!(xlabel="√ndofs",ylabel="error",title=title)
 for p in 1:5
     cc = errs[end]*sqrt_ndofs[end]^p
