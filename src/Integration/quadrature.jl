@@ -96,9 +96,60 @@ end
 
 @generated function 
     get_qnodes_and_qweights(q::GaussQuadrature{<:ReferenceTriangle, O}) where {O}
-    element_name = "Triangle"
-    qrule_name = "Gauss$O"
-    x, w = get_qrule_from_gmsh(element_name, qrule_name)
-    @assert (length(x) == length(w)) && (length(x) > 0)
+    if O == 5
+        x,w = gauss5_qnodes_and_qweights()
+    elseif O == 7
+        x,w = gauss7_qnodes_and_qweights()
+    else
+        element_name = "Triangle"
+        qrule_name = "Gauss$O"
+        x, w = get_qrule_from_gmsh(element_name, qrule_name)
+        @assert (length(x) == length(w)) && (length(x) > 0)
+    end
     return :($x,$w)
+end
+
+function gauss5_qnodes_and_qweights()
+    #*! Quadrature rule for an interpolation of order 5 on the triangle *#
+    #* 'Symmetric quadrature rules for simplexes based on sphere close packed
+    #*  lattice arrangements', D.M. Williams, L. Shunn and A. Jameson *#    
+    TRIANGLE_G5N10 = (
+    (SVector(3.333333333333333e-01, 3.333333333333333e-01), 1.007714942923651e-01),
+    (SVector(5.556405266979300e-02, 8.888718946604139e-01), 2.097775649832452e-02),
+    (SVector(8.888718946604139e-01, 5.556405266979300e-02), 2.097775649832452e-02),
+    (SVector(5.556405266979300e-02, 5.556405266979300e-02), 2.097775649832452e-02),
+    (SVector(6.342107477457230e-01, 7.025554051838412e-02), 5.604920603544356e-02),
+    (SVector(7.025554051838412e-02, 6.342107477457230e-01), 5.604920603544356e-02),
+    (SVector(2.955337117358930e-01, 7.025554051838412e-02), 5.604920603544356e-02),
+    (SVector(7.025554051838412e-02, 2.955337117358930e-01), 5.604920603544356e-02),
+    (SVector(2.955337117358930e-01, 6.342107477457230e-01), 5.604920603544356e-02),
+    (SVector(6.342107477457230e-01, 2.955337117358930e-01), 5.604920603544356e-02))
+    x = [qdata[1] for qdata in TRIANGLE_G5N10]
+    w = [qdata[2] for qdata in TRIANGLE_G5N10]
+    return x,w
+end
+
+function gauss7_qnodes_and_qweights()
+    #*! Quadrature rule for an interpolation of order 7 on the triangle *#
+    #* 'Symmetric quadrature rules for simplexes based on sphere close packed
+    #*  lattice arrangements', D.M. Williams, L. Shunn and A. Jameson *#
+    TRIANGLE_G7N15 = (
+    (SVector(3.587087769573400e-02, 9.282582446085320e-01), 8.957727506151512e-03),
+    (SVector(9.282582446085320e-01, 3.587087769573400e-02), 8.957727506151512e-03),
+    (SVector(3.587087769573400e-02, 3.587087769573400e-02), 8.957727506151512e-03),
+    (SVector(2.417293957679670e-01, 5.165412084640659e-01), 6.385609794063259e-02),
+    (SVector(5.165412084640659e-01, 2.417293957679670e-01), 6.385609794063259e-02),
+    (SVector(2.417293957679670e-01, 2.417293957679670e-01), 6.385609794063259e-02),
+    (SVector(4.743087877770790e-01, 5.138242444584196e-02), 3.810303119276755e-02),
+    (SVector(5.138242444584196e-02, 4.743087877770790e-01), 3.810303119276755e-02),
+    (SVector(4.743087877770790e-01, 4.743087877770790e-01), 3.810303119276755e-02),
+    (SVector(7.511836311064840e-01, 4.731248701171598e-02), 2.787490501355754e-02),
+    (SVector(4.731248701171598e-02, 7.511836311064840e-01), 2.787490501355754e-02),
+    (SVector(2.015038818818000e-01, 4.731248701171598e-02), 2.787490501355754e-02),
+    (SVector(4.731248701171598e-02, 2.015038818818000e-01), 2.787490501355754e-02),
+    (SVector(2.015038818818000e-01, 7.511836311064840e-01), 2.787490501355754e-02),
+    (SVector(7.511836311064840e-01, 2.015038818818000e-01), 2.787490501355754e-02))
+    x = [qdata[1] for qdata in TRIANGLE_G7N15]
+    w = [qdata[2] for qdata in TRIANGLE_G7N15]
+    return x,w
 end
