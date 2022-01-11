@@ -14,12 +14,6 @@ git-tree-sha1 = "0f7998147ff3d112fad027c894b6b6bebf867154"
 uuid = "4c555306-a7a7-4459-81d9-ec55ddd5c99a"
 version = "0.7.3"
 
-[[ArtifactUtils]]
-deps = ["Downloads", "Pkg", "SHA"]
-git-tree-sha1 = "519f8fcc0ef248d31c399818bb3e3412bece6edd"
-uuid = "8b73e784-e7d8-4ea5-973d-377fed4e3bce"
-version = "0.1.1"
-
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
 
@@ -123,12 +117,12 @@ deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
 
 [[GmshSDK]]
-deps = ["ArtifactUtils", "Libdl", "Pkg", "Test"]
-git-tree-sha1 = "94d4a33cc699ce66f3f2708940138ceabec5db00"
+deps = ["Artifacts", "Libdl", "OrderedCollections", "Printf", "RecipesBase", "StaticArrays", "Test", "WavePropBase"]
+git-tree-sha1 = "f9d4971c90e1a75959dc60c63e0fccb6a52720ed"
 repo-rev = "main"
 repo-url = "https://github.com/WaveProp/GmshSDK"
 uuid = "357176ee-4fc2-4a7a-b2e3-8358239da070"
-version = "4.7.0"
+version = "0.1.0"
 
 [[InteractiveUtils]]
 deps = ["Markdown"]

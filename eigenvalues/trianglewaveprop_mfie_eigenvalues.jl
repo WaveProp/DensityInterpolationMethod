@@ -24,14 +24,14 @@ h = 0.6              # mesh size
 ##
 mesh_filename = "test/meshes/sphere1.geo"
 mesh = read_gmsh_geo(mesh_filename, h=h, order=2, verbosity=false);
-dimdata = generate_dimdata(mesh, qorder=qorder, k=k,n_src=n_src, α=α, β=β);
-DM.initialize!(dimdata) 
-L = DM.compute_nystrom_maxwell_matrix(dimdata, DM.ExteriorNystromFormulation)
+gquad = generate_globalquadrature(mesh, order=qorder)
+_,K = DM.single_doublelayer_dim(gquad; k, n_src)
+L = 0.5I + DM.get_matrix_from_pseudoblockmatrix(K)
 
 ##
 eigenvalues = eigvals!(L)
 fig = scatter(eigenvalues,label="eigenvalues",framestyle=:box,xtickfontsize=10,ytickfontsize=10)
-title!("k= $k, qorder=$qorder, h=$h, n_src=$n_src")
+title!("k= $k, qorder=$qorder, h=$h, n_src=$n_src, plane0x0")
 scatter!(fig, [0+0im], markersize=7, label="origin")
 xlabel!(fig, "Re λ")
 ylabel!(fig, "Im λ")

@@ -15,11 +15,11 @@ print_threads_info()
 ##
 k = π
 sph_radius = 1
-n_src = 50         # number of interpolant sources
+n_src = 26         # number of interpolant sources
 α = 1              # MFIE constant
 β = 0              # EFIE constant
-qorder = 7         # quadrature order 
-n = 5    # number of patches
+qorder = 6         # quadrature order 
+n = 4    # number of patches
 
 ##
 Γ = DM.parametric_sphere(;radius=sph_radius)
@@ -30,6 +30,7 @@ L = 0.5I + DM.get_matrix_from_pseudoblockmatrix(K)
 ##
 eigenvalues = eigvals!(L)
 fig = scatter(eigenvalues,label="eigenvalues",framestyle=:box,xtickfontsize=10,ytickfontsize=10)
+title!("k= $k, qorder=$qorder, n=$n, n_src=$n_src, plane")
 scatter!(fig, [0+0im], markersize=7, label="origin")
 xlabel!(fig, "Re λ")
 ylabel!(fig, "Im λ")
