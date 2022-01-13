@@ -71,23 +71,20 @@ function get_singular_weights_dim(gquad,γ₀B,γ₁B,R)
     # FIXME: assumes all elements are equal
     n_qnodes_per_element = length(first(gquad.elements))
     M = generate_pseudoblockmatrix(T, 2*n_qnodes_per_element, n_src)
+    F = generate_pseudoblockmatrix(T, n_src, 2*n_qnodes_per_element)
+    tmp = generate_pseudoblockmatrix(T, 1, 2*n_qnodes_per_element)
     for n in 1:num_els
         j_glob = get_inelement_qnode_indices(gquad, n)
         _assemble_interpolant_matrix!(M, γ₀B, γ₁B, j_glob, n_qnodes_per_element, n_src) # assemble M
-        F = wrap_into_pseudoblockmatrix(M |> get_matrix_from_pseudoblockmatrix |> pinv, T) # FIXME: Change pseudoinverse for LQ
+        F .= M |> get_matrix_from_pseudoblockmatrix |> pinv  # FIXME: Change pseudoinverse for LQ
         for i in j_glob
-            # assemble blockmatrix_to_matrix(R[i:i,:]) * F
-            tmp1 = generate_pseudoblockmatrix(T, 1, n_src)
-            for l in 1:n_src
-                tmp1[Block(1,l)] = R[Block(i,l)]
-            end
-            tmp2 = tmp1 * F
+            mul!(tmp, view(R,Block(i),Block.(1:n_src)), F)
             # append submatrices to vectors
             for l in 1:n_qnodes_per_element
                 push!(Is, i)
                 push!(Js, j_glob[l])
-                push!(Ds, tmp2[Block(1, l)])
-                push!(Ss, tmp2[Block(1, l+n_qnodes_per_element)])
+                push!(Ds, tmp[Block(1, l)])
+                push!(Ss, tmp[Block(1, l+n_qnodes_per_element)])
             end
         end
     end
