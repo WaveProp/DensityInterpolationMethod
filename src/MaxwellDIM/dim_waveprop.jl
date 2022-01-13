@@ -63,13 +63,15 @@ end
 function get_singular_weights_dim(gquad,γ₀B,γ₁B,R)
     n_src = blocksize(γ₀B,2)
     T = MaxwellKernelType
-    Is = Int[]
-    Js = Int[]
-    Ss = T[]   # for single layer
-    Ds = T[]   # for double layer
-    num_els = get_number_of_elements(gquad)
     # FIXME: assumes all elements are equal
+    num_els = get_number_of_elements(gquad)
     n_qnodes_per_element = length(first(gquad.elements))
+    ndata = num_els * n_qnodes_per_element^2  # length of arrays Is,Js,Ss,Ds
+    Is = Vector{Int64}(undef, ndata)
+    Js = Vector{Int64}(undef, ndata)
+    Ss = Vector{T}(undef, ndata)   # for single layer
+    Ds = Vector{T}(undef, ndata)   # for double layer
+    index = 1
     M = generate_pseudoblockmatrix(T, 2*n_qnodes_per_element, n_src)
     F = generate_pseudoblockmatrix(T, n_src, 2*n_qnodes_per_element)
     tmp = generate_pseudoblockmatrix(T, 1, 2*n_qnodes_per_element)
@@ -81,13 +83,15 @@ function get_singular_weights_dim(gquad,γ₀B,γ₁B,R)
             mul!(tmp, view(R,Block(i),Block.(1:n_src)), F)
             # append submatrices to vectors
             for l in 1:n_qnodes_per_element
-                push!(Is, i)
-                push!(Js, j_glob[l])
-                push!(Ds, tmp[Block(1, l)])
-                push!(Ss, tmp[Block(1, l+n_qnodes_per_element)])
+                Is[index] = i
+                Js[index] = j_glob[l]
+                Ds[index] = tmp[Block(1, l)]
+                Ss[index] = tmp[Block(1, l+n_qnodes_per_element)]
+                index += 1
             end
         end
     end
+    @assert index == ndata+1
     return Is, Js, Ss, Ds
 end
 function _assemble_interpolant_matrix!(M, γ₀B, γ₁B, j_glob, n_qnodes_per_element, n_src)

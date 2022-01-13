@@ -15,10 +15,10 @@ print_threads_info()
 ##
 k = π
 sph_radius = 1
-n_src = 26         # number of interpolant sources
+n_src = 50         # number of interpolant sources
 α = 1              # MFIE constant
 β = 0              # EFIE constant
-qorder = 6         # quadrature order 
+qorder = 7         # quadrature order 
 n = 4    # number of patches
 
 ##
@@ -28,9 +28,19 @@ _,K = DM.single_doublelayer_dim(gquad; k, n_src)
 L = 0.5I + DM.get_matrix_from_pseudoblockmatrix(K)
 
 ##
-eigenvalues = eigvals!(L)
+eigenvalues = eigvals(L)
 fig = scatter(eigenvalues,label="eigenvalues",framestyle=:box,xtickfontsize=10,ytickfontsize=10)
-title!("k= $k, qorder=$qorder, n=$n, n_src=$n_src, plane")
+title!("k= $(round(k,digits=3)), qorder=$qorder, n=$n, n_src=$n_src") 
+scatter!(fig, [0+0im], markersize=7, label="origin")
+xlabel!(fig, "Re λ")
+ylabel!(fig, "Im λ")
+
+## precond
+R = DM.get_blockdiag_precond(gquad, L)
+L = R\L
+eigenvalues = eigvals!(L)
+fig = scatter(eigenvalues,label="eigenvalues precond",framestyle=:box,xtickfontsize=10,ytickfontsize=10)
+title!("k= $(round(k,digits=3)), qorder=$qorder, n=$n, n_src=$n_src, precond") 
 scatter!(fig, [0+0im], markersize=7, label="origin")
 xlabel!(fig, "Re λ")
 ylabel!(fig, "Im λ")

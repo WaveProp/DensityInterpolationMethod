@@ -13,12 +13,12 @@ BLAS.set_num_threads(Threads.nthreads())
 print_threads_info()
 
 ##
-k = 3π
+k = π
 sph_radius = 1
-n_src = 26         # number of interpolant sources
+n_src = 50         # number of interpolant sources
 α = 1              # MFIE constant
 β = 0              # EFIE constant
-qorder = 4         # quadrature order 
+qorder = 5         # quadrature order 
 h = 0.6              # mesh size
 
 ##
@@ -29,9 +29,19 @@ _,K = DM.single_doublelayer_dim(gquad; k, n_src)
 L = 0.5I + DM.get_matrix_from_pseudoblockmatrix(K)
 
 ##
-eigenvalues = eigvals!(L)
+eigenvalues = eigvals(L)
 fig = scatter(eigenvalues,label="eigenvalues",framestyle=:box,xtickfontsize=10,ytickfontsize=10)
-title!("k= $k, qorder=$qorder, h=$h, n_src=$n_src, plane0x0")
+title!("k= $(round(k,digits=3)), qorder=$qorder, h=$h, n_src=$n_src")
+scatter!(fig, [0+0im], markersize=7, label="origin")
+xlabel!(fig, "Re λ")
+ylabel!(fig, "Im λ")
+
+## precond
+R = DM.get_blockdiag_precond(gquad, L)
+L = R\L
+eigenvalues = eigvals!(L)
+fig = scatter(eigenvalues,label="eigenvalues precond",framestyle=:box,xtickfontsize=10,ytickfontsize=10)
+title!("k= $(round(k,digits=3)), qorder=$qorder, h=$h, n_src=$n_src, precond")
 scatter!(fig, [0+0im], markersize=7, label="origin")
 xlabel!(fig, "Re λ")
 ylabel!(fig, "Im λ")
