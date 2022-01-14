@@ -233,6 +233,20 @@ function solve_GMRES(A::Matrix{ComplexF64}, σ::AbstractVector{V}, args...; kwar
     return vals
 end
 
+function IterativeSolvers.gmres(A::Matrix{<:Number}, μ::AbstractVector{V}, args...; kwargs...) where {V<:SVector}
+    log = haskey(kwargs,:log) ? kwargs[:log] : false
+    μ_vec = reinterpret(eltype(V), μ)
+    σ_vec = deepcopy(μ_vec)
+    σ = reinterpret(V,σ_vec)
+    if log
+        _,hist = gmres!(σ_vec,A,μ_vec,args...;kwargs...)
+        return σ,hist
+    else
+        _ = gmres!(σ_vec,A,μ_vec,args...;kwargs...)
+        return σ
+    end
+end
+
 function get_blockdiag_precond(gquad, L)
     n_qnodes = get_number_of_qnodes(gquad)
     n_dof = size(L, 1)
